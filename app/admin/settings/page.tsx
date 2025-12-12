@@ -48,7 +48,7 @@ export default function AdminSettingsPage() {
           site_name: 'SEMACELIK.COM',
           site_logo: '/logo.svg',
           site_description: 'Kaliteli ve şık kadın giyim ürünleri',
-          top_banner: '2000 TL VE ÜZERİ ALIŞVERİŞLERDE ÜCRETSİZ KARGO! 🚚',
+          top_banner: 'Yeni Web Sitemiz Yayında! 🎉',
           contact_email: 'info@semacelik.com',
           contact_phone: '+90 555 123 4567',
           instagram_url: 'https://instagram.com/semacelik',
@@ -70,7 +70,7 @@ export default function AdminSettingsPage() {
         site_name: settingsObj.site_name || 'SEMACELIK.COM',
         site_logo: settingsObj.site_logo || '/logo.svg',
         site_description: settingsObj.site_description || '',
-        top_banner: settingsObj.top_banner || '2000 TL VE ÜZERİ ALIŞVERİŞLERDE ÜCRETSİZ KARGO! 🚚',
+        top_banner: settingsObj.top_banner || 'Yeni Web Sitemiz Yayında! 🎉',
         contact_email: settingsObj.contact_email || '',
         contact_phone: settingsObj.contact_phone || '',
         instagram_url: settingsObj.instagram_url || '',
@@ -221,7 +221,7 @@ export default function AdminSettingsPage() {
               <Input
                 value={settings.top_banner}
                 onChange={(e) => setSettings({ ...settings, top_banner: e.target.value })}
-                placeholder="2000 TL VE ÜZERİ ALIŞVERİŞLERDE ÜCRETSİZ KARGO! 🚚"
+                placeholder="Yeni Web Sitemiz Yayında! 🎉"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Sitenin en üstünde görünen duyuru mesajı. Emoji kullanabilirsiniz.

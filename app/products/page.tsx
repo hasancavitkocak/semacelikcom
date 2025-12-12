@@ -536,7 +536,7 @@ function ProductsContent() {
                 return (
                   <div key={product.id} className="group relative">
                     <Link 
-                      href={`/products/${product.id}`}
+                      href={`/products/${product.slug}`}
                       className="block"
                     >
                       <div className="relative overflow-hidden rounded-lg bg-gray-50 mb-3">
@@ -578,7 +578,7 @@ function ProductsContent() {
                       />
                     </button>
                     
-                    <Link href={`/products/${product.id}`}>
+                    <Link href={`/products/${product.slug}`}>
                       <div className="space-y-1">
                         {product.category && (
                           <p className="text-xs text-gray-500 uppercase tracking-wide">

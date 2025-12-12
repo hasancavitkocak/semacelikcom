@@ -14,7 +14,7 @@ export default function Header() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [siteLogo, setSiteLogo] = useState('')
-  const [topBanner, setTopBanner] = useState('2000 TL VE ÜZERİ ALIŞVERİŞLERDE ÜCRETSİZ KARGO! 🚚')
+  const [topBanner, setTopBanner] = useState('Yeni Web Sitemiz Yayında! 🎉')
   const [headerMenus, setHeaderMenus] = useState<any[]>([])
   const [expandedMobileMenus, setExpandedMobileMenus] = useState<Set<string>>(new Set())
 
@@ -84,7 +84,7 @@ export default function Header() {
         .eq('key', 'top_banner')
         .single()
       
-      const bannerText = data?.value || '2000 TL VE ÜZERİ ALIŞVERİŞLERDE ÜCRETSİZ KARGO! 🚚'
+      const bannerText = data?.value || 'Yeni Web Sitemiz Yayında! 🎉'
       setTopBanner(bannerText)
       localStorage.setItem('top_banner_cache', bannerText)
       localStorage.setItem('top_banner_cache_time', Date.now().toString())

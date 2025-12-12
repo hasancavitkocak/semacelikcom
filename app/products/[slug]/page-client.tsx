@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Heart, ChevronRight, Home, MoreHorizontal } from 'lucide-react'
 import { useCart } from '@/contexts/cart-context'
 import { useFavorites } from '@/contexts/favorites-context'
+import ImageZoomModal from '@/components/image-zoom-modal'
 
 interface ProductClientProps {
   product: any
@@ -20,6 +21,7 @@ export default function ProductClient({ product }: ProductClientProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [showSizeError, setShowSizeError] = useState(false)
   const [showColorError, setShowColorError] = useState(false)
+  const [isZoomModalOpen, setIsZoomModalOpen] = useState(false)
   const isProductFavorite = isFavorite(product.id)
   
   // Product'tan images ve variants al
@@ -135,13 +137,23 @@ export default function ProductClient({ product }: ProductClientProps) {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
           {/* Sol: Görsel Galerisi */}
           <div className="space-y-4">
-            <div className="aspect-[4/5] bg-gray-50 overflow-hidden">
+            <div className="aspect-[4/5] bg-gray-50 overflow-hidden cursor-pointer group relative" onClick={() => setIsZoomModalOpen(true)}>
               {selectedImage ? (
-                <img 
-                  src={selectedImage.image_url} 
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <img 
+                    src={selectedImage.image_url} 
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <div className="bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </>
+              
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400">
                   <p>Görsel Yok</p>
@@ -155,17 +167,29 @@ export default function ProductClient({ product }: ProductClientProps) {
                   <button
                     key={img.id}
                     onClick={() => setSelectedImageIndex(index)}
-                    className={`aspect-square bg-gray-50 overflow-hidden border transition ${
+                    onDoubleClick={() => {
+                      setSelectedImageIndex(index)
+                      setIsZoomModalOpen(true)
+                    }}
+                    className={`aspect-square bg-gray-50 overflow-hidden border transition group relative ${
                       selectedImageIndex === index 
                         ? 'border-black' 
                         : 'border-gray-200 hover:border-gray-400'
                     }`}
+                    title="Çift tıklayarak büyüt"
                   >
                     <img 
                       src={img.image_url} 
                       alt={`${product.name} ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                     />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <div className="bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -321,6 +345,21 @@ export default function ProductClient({ product }: ProductClientProps) {
           </div>
         </div>
       </div>
+
+      {/* Image Zoom Modal */}
+      <ImageZoomModal
+        isOpen={isZoomModalOpen}
+        onClose={() => setIsZoomModalOpen(false)}
+        imageUrl={selectedImage?.image_url || ''}
+        imageAlt={product.name}
+        images={images.map((img: any) => ({
+          id: img.id,
+          image_url: img.image_url,
+          alt: `${product.name} - Görsel ${images.indexOf(img) + 1}`
+        }))}
+        currentIndex={selectedImageIndex}
+        onImageChange={setSelectedImageIndex}
+      />
     </div>
   )
 }

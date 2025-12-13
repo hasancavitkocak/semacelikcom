@@ -11,6 +11,7 @@ import { useCart } from '@/contexts/cart-context'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
 import PhoneInput from '@/components/phone-input'
+import { calculateShipping, getFreeShippingRemaining, type ShippingCalculation } from '@/lib/shipping'
 
 interface Address {
   id: string
@@ -48,7 +49,13 @@ export default function CheckoutPage() {
   const [sameAsShipping, setSameAsShipping] = useState(true)
   const [selectedShippingId, setSelectedShippingId] = useState<string | null>(null)
   const [selectedBillingId, setSelectedBillingId] = useState<string | null>(null)
+  const [selectedShippingOption, setSelectedShippingOption] = useState('standard')
+  const [shippingCalculation, setShippingCalculation] = useState<ShippingCalculation | null>(null)
+  const [freeShippingRemaining, setFreeShippingRemaining] = useState(0)
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [addressesLoading, setAddressesLoading] = useState(false)
+  const [shippingLoading, setShippingLoading] = useState(false)
+  const [citiesLoading, setCitiesLoading] = useState(false)
   const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     fullName: '',
@@ -69,20 +76,22 @@ export default function CheckoutPage() {
     zipCode: ''
   })
 
-  // Sadece bir kez yükle
+  // İlk yükleme - paralel olarak tüm verileri çek
   useEffect(() => {
     if (cartItems.length === 0) {
       router.push('/cart')
       return
     }
     
-    // Cities ve districts'i sadece bir kez yükle
-    if (cities.length === 0) {
-      loadCities()
+    // Paralel yükleme
+    const initializeData = async () => {
+      await Promise.all([
+        cities.length === 0 ? loadCities() : Promise.resolve(),
+        districts.length === 0 ? loadDistricts() : Promise.resolve()
+      ])
     }
-    if (districts.length === 0) {
-      loadDistricts()
-    }
+    
+    initializeData()
   }, [cartItems.length])
 
   useEffect(() => {
@@ -99,21 +108,32 @@ export default function CheckoutPage() {
   }, [formData.city, cities, districts])
 
   const loadCities = async () => {
-    const { data, error } = await supabase
-      .from('cities')
-      .select('*')
-      .order('name')
-    
-    if (data) setCities(data)
+    setCitiesLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('cities')
+        .select('*')
+        .order('name')
+      
+      if (data) setCities(data)
+    } catch (error) {
+      console.error('Load cities error:', error)
+    } finally {
+      setCitiesLoading(false)
+    }
   }
 
   const loadDistricts = async () => {
-    const { data, error } = await supabase
-      .from('districts')
-      .select('*')
-      .order('name')
-    
-    if (data) setDistricts(data)
+    try {
+      const { data, error } = await supabase
+        .from('districts')
+        .select('*')
+        .order('name')
+      
+      if (data) setDistricts(data)
+    } catch (error) {
+      console.error('Load districts error:', error)
+    }
   }
 
   // User değiştiğinde adresleri yükle - SADECE BİR KEZ
@@ -129,20 +149,56 @@ export default function CheckoutPage() {
     }
   }, [user?.id, authLoading])
 
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = item.product?.price || 0
+    return sum + (price * item.quantity)
+  }, 0)
+
+  const total = shippingCalculation ? shippingCalculation.total : subtotal
+
+  // Kargo hesaplama
+  useEffect(() => {
+    const calculateShippingCost = async () => {
+      if (subtotal > 0 && cartItems.length > 0) {
+        setShippingLoading(true)
+        try {
+          const calculation = await calculateShipping(subtotal, selectedShippingOption)
+          setShippingCalculation(calculation)
+          
+          const remaining = await getFreeShippingRemaining(subtotal)
+          setFreeShippingRemaining(remaining)
+        } catch (error) {
+          console.error('Shipping calculation error:', error)
+        } finally {
+          setShippingLoading(false)
+        }
+      }
+    }
+
+    calculateShippingCost()
+  }, [subtotal, selectedShippingOption, cartItems.length])
+
   const loadAddresses = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('addresses')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-    
-    if (data && data.length > 0) {
-      setSavedAddresses(data)
-      // İlk adresi varsayılan olarak seç
-      setSelectedAddressId(data[0].id)
-      fillFormWithAddress(data[0])
-    } else {
-      setUseNewAddress(true)
+    setAddressesLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('addresses')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      
+      if (data && data.length > 0) {
+        setSavedAddresses(data)
+        // İlk adresi varsayılan olarak seç
+        setSelectedAddressId(data[0].id)
+        fillFormWithAddress(data[0])
+      } else {
+        setUseNewAddress(true)
+      }
+    } catch (error) {
+      console.error('Load addresses error:', error)
+    } finally {
+      setAddressesLoading(false)
     }
   }
 
@@ -166,11 +222,6 @@ export default function CheckoutPage() {
       fillFormWithAddress(address)
     }
   }
-
-  const total = cartItems.reduce((sum, item) => {
-    const price = item.product?.price || 0
-    return sum + (price * item.quantity)
-  }, 0)
 
   const steps = [
     { number: 1, title: 'Teslimat' },
@@ -257,47 +308,77 @@ export default function CheckoutPage() {
                   </h2>
 
                   {/* Kayıtlı Adresler */}
-                  {user && savedAddresses.length > 0 && !useNewAddress && (
+                  {user && !useNewAddress && (
                     <div className="mb-6">
                       <h3 className="font-semibold mb-3 flex items-center gap-2">
                         <MapPin size={18} />
                         Kayıtlı Adreslerim
                       </h3>
-                      <div className="space-y-3">
-                        {savedAddresses.map(address => (
-                          <div 
-                            key={address.id}
-                            onClick={() => handleAddressSelect(address.id)}
-                            className={`border-2 rounded-lg p-4 cursor-pointer transition ${
-                              selectedAddressId === address.id 
-                                ? 'border-gray-900 bg-gray-50' 
-                                : 'border-gray-200 hover:border-gray-400'
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <input 
-                                type="radio" 
-                                checked={selectedAddressId === address.id}
-                                onChange={() => handleAddressSelect(address.id)}
-                                className="mt-1 w-5 h-5 accent-gray-900"
-                              />
-                              <div className="flex-1">
-                                <p className="font-bold text-lg mb-1">{address.title}</p>
-                                <p className="text-gray-700">{address.full_name} - {address.phone}</p>
-                                <p className="text-gray-600 text-sm mt-1">{address.address_line}</p>
-                                <p className="text-gray-600 text-sm">{address.district} / {address.city}</p>
+                      
+                      {addressesLoading ? (
+                        <div className="space-y-3">
+                          {[1, 2].map(i => (
+                            <div key={i} className="border-2 border-gray-200 rounded-lg p-4 animate-pulse">
+                              <div className="flex items-center gap-3">
+                                <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
+                                <div className="flex-1">
+                                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                                </div>
                               </div>
                             </div>
+                          ))}
+                        </div>
+                      ) : savedAddresses.length > 0 ? (
+                        <>
+                          <div className="space-y-3">
+                            {savedAddresses.map(address => (
+                              <div 
+                                key={address.id}
+                                onClick={() => handleAddressSelect(address.id)}
+                                className={`border-2 rounded-lg p-4 cursor-pointer transition ${
+                                  selectedAddressId === address.id 
+                                    ? 'border-gray-900 bg-gray-50' 
+                                    : 'border-gray-200 hover:border-gray-400'
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <input 
+                                    type="radio" 
+                                    checked={selectedAddressId === address.id}
+                                    onChange={() => handleAddressSelect(address.id)}
+                                    className="mt-1 w-5 h-5 accent-gray-900"
+                                  />
+                                  <div className="flex-1">
+                                    <p className="font-bold text-lg mb-1">{address.title}</p>
+                                    <p className="text-gray-700">{address.full_name} - {address.phone}</p>
+                                    <p className="text-gray-600 text-sm mt-1">{address.address_line}</p>
+                                    <p className="text-gray-600 text-sm">{address.district} / {address.city}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setUseNewAddress(true)}
-                        className="mt-4 text-gray-900 font-semibold hover:underline"
-                      >
-                        + Yeni Adres Ekle
-                      </button>
+                          <button
+                            type="button"
+                            onClick={() => setUseNewAddress(true)}
+                            className="mt-4 text-gray-900 font-semibold hover:underline"
+                          >
+                            + Yeni Adres Ekle
+                          </button>
+                        </>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          <p>Kayıtlı adres bulunamadı</p>
+                          <button
+                            type="button"
+                            onClick={() => setUseNewAddress(true)}
+                            className="mt-2 text-gray-900 font-semibold hover:underline"
+                          >
+                            + Yeni Adres Ekle
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -378,7 +459,7 @@ export default function CheckoutPage() {
                               setFormData({...formData, city: e.target.value, district: ''})
                             }}
                           >
-                            <option value="">İl Seçin</option>
+                            <option value="">{citiesLoading ? 'Şehirler yükleniyor...' : 'İl Seçin'}</option>
                             {cities.map(city => (
                               <option key={city.id} value={city.name}>{city.name}</option>
                             ))}
@@ -412,6 +493,68 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Kargo Seçenekleri */}
+                  <div className="mt-8 pt-8 border-t-2">
+                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                      <Truck size={20} />
+                      Kargo Seçenekleri
+                    </h3>
+                    
+                    {shippingLoading ? (
+                      <div className="space-y-3">
+                        {[1, 2].map(i => (
+                          <div key={i} className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg animate-pulse">
+                            <div className="flex items-center gap-3">
+                              <div className="w-5 h-5 bg-gray-200 rounded-full"></div>
+                              <div>
+                                <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                                <div className="h-3 bg-gray-200 rounded w-32"></div>
+                              </div>
+                            </div>
+                            <div className="h-4 bg-gray-200 rounded w-16"></div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : shippingCalculation && shippingCalculation.availableOptions ? (
+                      <div className="space-y-3">
+                        {shippingCalculation.availableOptions.map((option) => (
+                          <label 
+                            key={option.id}
+                            className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition ${
+                              selectedShippingOption === option.id 
+                                ? 'border-gray-900 bg-gray-50' 
+                                : 'border-gray-200 hover:border-gray-400'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="radio"
+                                name="shipping"
+                                value={option.id}
+                                checked={selectedShippingOption === option.id}
+                                onChange={(e) => setSelectedShippingOption(e.target.value)}
+                                className="w-5 h-5 accent-gray-900"
+                              />
+                              <div>
+                                <p className="font-semibold text-gray-900">{option.name}</p>
+                                <p className="text-sm text-gray-600">{option.estimatedDays} • {option.description}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-gray-900">
+                                {option.cost === 0 ? 'Ücretsiz' : `${option.cost.toFixed(2)} ₺`}
+                              </p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">
+                        <p>Kargo seçenekleri yükleniyor...</p>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Fatura Adresi */}
                   <div className="mt-8 pt-8 border-t-2">
@@ -523,7 +666,7 @@ export default function CheckoutPage() {
                                   value={billingData.city}
                                   onChange={(e) => setBillingData({...billingData, city: e.target.value, district: ''})}
                                 >
-                                  <option value="">İl Seçin</option>
+                                  <option value="">{citiesLoading ? 'Şehirler yükleniyor...' : 'İl Seçin'}</option>
                                   {cities.map(city => (
                                     <option key={city.id} value={city.name}>{city.name}</option>
                                   ))}
@@ -753,12 +896,23 @@ export default function CheckoutPage() {
                   })}
                   <div className="border-t pt-2 md:pt-3 flex justify-between">
                     <span>Ara Toplam</span>
-                    <span>{total.toFixed(2)} ₺</span>
+                    <span>{subtotal.toFixed(2)} ₺</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Kargo</span>
-                    <span className="text-green-600 font-semibold">Ücretsiz</span>
+                    {shippingLoading ? (
+                      <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+                    ) : (
+                      <span className={`font-semibold ${shippingCalculation?.isFreeShipping ? 'text-green-600' : 'text-orange-600'}`}>
+                        {shippingCalculation?.isFreeShipping ? 'Ücretsiz' : `${shippingCalculation?.shippingCost.toFixed(2)} ₺`}
+                      </span>
+                    )}
                   </div>
+                  {freeShippingRemaining > 0 && (
+                    <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded-lg">
+                      💡 <strong>{freeShippingRemaining.toFixed(2)} ₺</strong> daha ekleyin, kargo ücretsiz olsun!
+                    </div>
+                  )}
                   <div className="border-t pt-2 md:pt-3 flex justify-between font-bold text-base md:text-lg">
                     <span>Toplam</span>
                     <span>{total.toFixed(2)} ₺</span>

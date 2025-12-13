@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, Palette, ShoppingBag, FolderOpen, Ticket, Users, Settings, LogOut, Home, Image, Star, Menu } from 'lucide-react'
+import { LayoutDashboard, Package, Palette, ShoppingBag, FolderOpen, Ticket, Users, Settings, LogOut, Home, Image, Star, Menu, Truck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -159,6 +159,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Star size={20} />
             <span className="font-medium">Vitrin</span>
+          </Link>
+          
+          <Link 
+            href="/admin/shipping" 
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+              isActive('/admin/shipping') 
+                ? 'bg-white text-gray-900 shadow-lg' 
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+            }`}
+          >
+            <Truck size={20} />
+            <span className="font-medium">Kargo</span>
           </Link>
           
           <Link 

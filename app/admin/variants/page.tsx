@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { supabase } from '@/lib/supabase'
+import { Palette, Plus, Edit, Trash2, Search, Filter, TrendingUp, Ruler, Tag, MoreHorizontal } from 'lucide-react'
 
 export default function AdminVariantsPage() {
   const [colors, setColors] = useState<any[]>([])
   const [sizes, setSizes] = useState<any[]>([])
+  const [filteredColors, setFilteredColors] = useState<any[]>([])
+  const [filteredSizes, setFilteredSizes] = useState<any[]>([])
   const [showColorForm, setShowColorForm] = useState(false)
   const [showSizeForm, setShowSizeForm] = useState(false)
   const [colorForm, setColorForm] = useState({ id: '', name: '', hexCode: '#000000' })
@@ -18,6 +19,9 @@ export default function AdminVariantsPage() {
   const [loading, setLoading] = useState(false)
   const [editingColor, setEditingColor] = useState(false)
   const [editingSize, setEditingSize] = useState(false)
+  const [colorSearch, setColorSearch] = useState('')
+  const [sizeSearch, setSizeSearch] = useState('')
+  const [sizeFilter, setSizeFilter] = useState('')
 
   useEffect(() => {
     loadData()
@@ -36,14 +40,32 @@ export default function AdminVariantsPage() {
     
     setColors(colorsData || [])
     setSizes(sizesData || [])
+    setFilteredColors(colorsData || [])
+    setFilteredSizes(sizesData || [])
   }
+
+  // Arama ve filtreleme
+  useEffect(() => {
+    let filtered = colors.filter(color => 
+      color.name.toLowerCase().includes(colorSearch.toLowerCase())
+    )
+    setFilteredColors(filtered)
+  }, [colors, colorSearch])
+
+  useEffect(() => {
+    let filtered = sizes.filter(size => {
+      const matchesSearch = size.name.toLowerCase().includes(sizeSearch.toLowerCase())
+      const matchesFilter = !sizeFilter || size.category === sizeFilter
+      return matchesSearch && matchesFilter
+    })
+    setFilteredSizes(filtered)
+  }, [sizes, sizeSearch, sizeFilter])
 
   const handleColorSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {
       if (editingColor && colorForm.id) {
-        // Güncelleme
         const { error } = await supabase
           .from('colors')
           .update({ name: colorForm.name, hex_code: colorForm.hexCode })
@@ -52,7 +74,6 @@ export default function AdminVariantsPage() {
         if (error) throw error
         alert('Renk güncellendi!')
       } else {
-        // Yeni ekleme
         const { error } = await supabase
           .from('colors')
           .insert([{ name: colorForm.name, hex_code: colorForm.hexCode }])
@@ -83,7 +104,6 @@ export default function AdminVariantsPage() {
     setLoading(true)
     try {
       if (editingSize && sizeForm.id) {
-        // Güncelleme
         const { error } = await supabase
           .from('sizes')
           .update({ name: sizeForm.name, category: sizeForm.category })
@@ -92,7 +112,6 @@ export default function AdminVariantsPage() {
         if (error) throw error
         alert('Beden güncellendi!')
       } else {
-        // Yeni ekleme
         const { error } = await supabase
           .from('sizes')
           .insert([{ name: sizeForm.name, category: sizeForm.category }])
@@ -152,223 +171,324 @@ export default function AdminVariantsPage() {
     }
   }
 
+  const handleCancel = () => {
+    setShowColorForm(false)
+    setShowSizeForm(false)
+    setEditingColor(false)
+    setEditingSize(false)
+    setColorForm({ id: '', name: '', hexCode: '#000000' })
+    setSizeForm({ id: '', name: '', category: '' })
+  }
+
   return (
-    <div className="max-w-7xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Renk & Beden Yönetimi</h1>
-        <p className="text-gray-600 mt-1">Ürünleriniz için renk ve beden tanımları oluşturun</p>
+    <div className="space-y-6">
+      {/* Sade Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-1">Renk & Beden Yönetimi</h1>
+        <p className="text-gray-600">
+          {colors.length} renk • {sizes.length} beden tanımlı
+        </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Renkler */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900">Renkler</h2>
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Renkler Bölümü */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                <Palette className="text-gray-600" size={20} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Renkler</h2>
+                <p className="text-gray-600 text-sm">{filteredColors.length} renk</p>
+              </div>
+            </div>
             <Button 
-              onClick={() => {
-                if (showColorForm) {
-                  setShowColorForm(false)
-                  setEditingColor(false)
-                  setColorForm({ id: '', name: '', hexCode: '#000000' })
-                } else {
-                  setShowColorForm(true)
-                }
-              }} 
-              size="sm"
-              className="bg-gray-900 hover:bg-black text-white font-medium"
+              onClick={() => setShowColorForm(!showColorForm)}
+              className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2"
             >
-              {showColorForm ? 'İptal' : '+ Yeni Renk'}
+              <Plus size={16} className="mr-2" />
+              {showColorForm ? 'İptal' : 'Yeni Renk'}
             </Button>
           </div>
 
+          {/* Arama */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Renk ara..."
+              value={colorSearch}
+              onChange={(e) => setColorSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+            />
+          </div>
+
+          {/* Renk Formu */}
           {showColorForm && (
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6">
               <form onSubmit={handleColorSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="colorName" className="text-sm font-medium text-gray-900">Renk Adı</Label>
-                  <Input 
-                    id="colorName" 
-                    placeholder="Örn: Siyah" 
-                    value={colorForm.name}
-                    onChange={(e) => setColorForm({...colorForm, name: e.target.value})}
-                    required
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="hexCode" className="text-sm font-medium text-gray-900">Renk Kodu</Label>
-                  <div className="flex gap-2 mt-1">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Renk Adı</Label>
                     <Input 
-                      id="hexCode" 
-                      placeholder="#000000" 
-                      value={colorForm.hexCode}
-                      onChange={(e) => setColorForm({...colorForm, hexCode: e.target.value})}
+                      placeholder="Örn: Siyah, Beyaz, Kırmızı" 
+                      value={colorForm.name}
+                      onChange={(e) => setColorForm({...colorForm, name: e.target.value})}
                       required
-                    />
-                    <input 
-                      type="color" 
-                      className="w-12 h-10 rounded-lg border border-gray-300 cursor-pointer"
-                      value={colorForm.hexCode}
-                      onChange={(e) => setColorForm({...colorForm, hexCode: e.target.value})}
+                      className="border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                     />
                   </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Renk Kodu</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="#000000" 
+                        value={colorForm.hexCode}
+                        onChange={(e) => setColorForm({...colorForm, hexCode: e.target.value})}
+                        required
+                        className="border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+                      />
+                      <input 
+                        type="color" 
+                        className="w-12 h-10 rounded-lg border border-gray-300 cursor-pointer"
+                        value={colorForm.hexCode}
+                        onChange={(e) => setColorForm({...colorForm, hexCode: e.target.value})}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <Button type="submit" size="sm" disabled={loading} className="bg-gray-900 hover:bg-black text-white font-medium">
-                  {loading ? (editingColor ? 'Güncelleniyor...' : 'Kaydediliyor...') : (editingColor ? 'Güncelle' : 'Kaydet')}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    type="submit" 
+                    disabled={loading} 
+                    className="bg-gray-900 hover:bg-gray-800 text-white"
+                  >
+                    {loading ? (editingColor ? 'Güncelleniyor...' : 'Kaydediliyor...') : (editingColor ? 'Güncelle' : 'Kaydet')}
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    className="border-gray-300 hover:bg-gray-50"
+                  >
+                    İptal
+                  </Button>
+                </div>
               </form>
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Renk</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Kod</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider">İşlem</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {colors.map((color) => (
-                    <tr key={color.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-8 h-8 rounded-lg border-2 border-gray-300 shadow-sm"
-                            style={{ backgroundColor: color.hex_code }}
-                          />
-                          <span className="font-medium text-gray-900">{color.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 font-mono text-sm text-gray-600">{color.hex_code}</td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex gap-2 justify-end">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => editColor(color)}
-                            className="border-gray-300"
-                          >
-                            Düzenle
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="sm"
-                            onClick={() => deleteColor(color.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Sil
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/* Renkler Listesi */}
+          <div className="space-y-3">
+            {filteredColors.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Palette size={24} className="text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Henüz renk yok</h3>
+                <p className="text-gray-600 mb-4">İlk renginizi ekleyerek başlayın</p>
+                <Button 
+                  onClick={() => setShowColorForm(true)}
+                  className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2"
+                >
+                  <Plus size={16} className="mr-2" />
+                  İlk Rengi Ekle
+                </Button>
+              </div>
+            ) : (
+              filteredColors.map((color) => (
+                <div key={color.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div 
+                      className="w-10 h-10 rounded-lg border border-gray-300"
+                      style={{ backgroundColor: color.hex_code }}
+                    />
+                    <div>
+                      <h3 className="font-medium text-gray-900">{color.name}</h3>
+                      <p className="text-sm text-gray-500 font-mono">{color.hex_code}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => editColor(color)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors" 
+                      title="Düzenle"
+                    >
+                      <Edit size={16} className="text-gray-600" />
+                    </button>
+                    <button
+                      onClick={() => deleteColor(color.id)}
+                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Sil"
+                    >
+                      <Trash2 size={16} className="text-red-600" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Bedenler */}
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900">Bedenler</h2>
+        {/* Bedenler Bölümü */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                <Ruler className="text-gray-600" size={20} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Bedenler</h2>
+                <p className="text-gray-600 text-sm">{filteredSizes.length} beden</p>
+              </div>
+            </div>
             <Button 
-              onClick={() => {
-                if (showSizeForm) {
-                  setShowSizeForm(false)
-                  setEditingSize(false)
-                  setSizeForm({ id: '', name: '', category: '' })
-                } else {
-                  setShowSizeForm(true)
-                }
-              }} 
-              size="sm"
-              className="bg-gray-900 hover:bg-black text-white font-medium"
+              onClick={() => setShowSizeForm(!showSizeForm)}
+              className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2"
             >
-              {showSizeForm ? 'İptal' : '+ Yeni Beden'}
+              <Plus size={16} className="mr-2" />
+              {showSizeForm ? 'İptal' : 'Yeni Beden'}
             </Button>
           </div>
 
+          {/* Arama ve Filtre */}
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Beden ara..."
+                value={sizeSearch}
+                onChange={(e) => setSizeSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+              />
+            </div>
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <select
+                value={sizeFilter}
+                onChange={(e) => setSizeFilter(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 appearance-none"
+              >
+                <option value="">Tüm Kategoriler</option>
+                <option value="Üst Giyim">Üst Giyim</option>
+                <option value="Alt Giyim">Alt Giyim</option>
+                <option value="Ayakkabı">Ayakkabı</option>
+                <option value="Ev Tekstili">Ev Tekstili</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Beden Formu */}
           {showSizeForm && (
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mb-6">
               <form onSubmit={handleSizeSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="sizeName" className="text-sm font-medium text-gray-900">Beden</Label>
-                  <Input 
-                    id="sizeName" 
-                    placeholder="Örn: M, 38" 
-                    value={sizeForm.name}
-                    onChange={(e) => setSizeForm({...sizeForm, name: e.target.value})}
-                    required
-                    className="mt-1"
-                  />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Beden Adı</Label>
+                    <Input 
+                      placeholder="Örn: S, M, L, 36, 38, 40" 
+                      value={sizeForm.name}
+                      onChange={(e) => setSizeForm({...sizeForm, name: e.target.value})}
+                      required
+                      className="border-gray-300 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Kategori</Label>
+                    <select 
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+                      value={sizeForm.category}
+                      onChange={(e) => setSizeForm({...sizeForm, category: e.target.value})}
+                      required
+                    >
+                      <option value="">Kategori Seçiniz</option>
+                      <option value="Üst Giyim">Üst Giyim</option>
+                      <option value="Alt Giyim">Alt Giyim</option>
+                      <option value="Ayakkabı">Ayakkabı</option>
+                      <option value="Ev Tekstili">Ev Tekstili</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="sizeCategory" className="text-sm font-medium text-gray-900">Kategori</Label>
-                  <select 
-                    id="sizeCategory"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                    value={sizeForm.category}
-                    onChange={(e) => setSizeForm({...sizeForm, category: e.target.value})}
-                    required
+                <div className="flex gap-2">
+                  <Button 
+                    type="submit" 
+                    disabled={loading} 
+                    className="bg-gray-900 hover:bg-gray-800 text-white"
                   >
-                    <option value="">Seçiniz</option>
-                    <option value="Üst Giyim">Üst Giyim</option>
-                    <option value="Alt Giyim">Alt Giyim</option>
-                    <option value="Ayakkabı">Ayakkabı</option>
-                    <option value="Ev Tekstili">Ev Tekstili</option>
-                  </select>
+                    {loading ? (editingSize ? 'Güncelleniyor...' : 'Kaydediliyor...') : (editingSize ? 'Güncelle' : 'Kaydet')}
+                  </Button>
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    className="border-gray-300 hover:bg-gray-50"
+                  >
+                    İptal
+                  </Button>
                 </div>
-                <Button type="submit" size="sm" disabled={loading} className="bg-gray-900 hover:bg-black text-white font-medium">
-                  {loading ? (editingSize ? 'Güncelleniyor...' : 'Kaydediliyor...') : (editingSize ? 'Güncelle' : 'Kaydet')}
-                </Button>
               </form>
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Beden</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">Kategori</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-900 uppercase tracking-wider">İşlem</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {sizes.map((size) => (
-                    <tr key={size.id} className="hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 font-semibold text-gray-900">{size.name}</td>
-                      <td className="px-6 py-4 text-gray-600">{size.category}</td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex gap-2 justify-end">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => editSize(size)}
-                            className="border-gray-300"
-                          >
-                            Düzenle
-                          </Button>
-                          <Button 
-                            variant="destructive" 
-                            size="sm"
-                            onClick={() => deleteSize(size.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Sil
-                          </Button>
+          {/* Bedenler Listesi */}
+          <div className="space-y-4">
+            {filteredSizes.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Ruler size={24} className="text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Henüz beden yok</h3>
+                <p className="text-gray-600 mb-4">İlk bedeninizi ekleyerek başlayın</p>
+                <Button 
+                  onClick={() => setShowSizeForm(true)}
+                  className="bg-gray-900 hover:bg-gray-800 text-white px-4 py-2"
+                >
+                  <Plus size={16} className="mr-2" />
+                  İlk Bedeni Ekle
+                </Button>
+              </div>
+            ) : (
+              // Kategorilere göre grupla
+              [...new Set(filteredSizes.map(s => s.category))].map(category => (
+                <div key={category} className="space-y-3">
+                  <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                    <Tag className="w-4 h-4 text-gray-600" />
+                    {category}
+                  </h3>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                    {filteredSizes
+                      .filter(size => size.category === category)
+                      .map((size) => (
+                        <div key={size.id} className="group bg-white border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                          <div className="text-center mb-3">
+                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-900 font-medium text-sm mx-auto mb-2">
+                              {size.name}
+                            </div>
+                          </div>
+                          <div className="flex gap-1 justify-center">
+                            <button 
+                              onClick={() => editSize(size)}
+                              className="p-1 hover:bg-gray-100 rounded transition-colors" 
+                              title="Düzenle"
+                            >
+                              <Edit size={12} className="text-gray-600" />
+                            </button>
+                            <button
+                              onClick={() => deleteSize(size.id)}
+                              className="p-1 hover:bg-red-50 rounded transition-colors"
+                              title="Sil"
+                            >
+                              <Trash2 size={12} className="text-red-600" />
+                            </button>
+                          </div>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -1,23 +1,63 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
 import { Plus, Minus, X } from 'lucide-react'
 import { useCart } from '@/contexts/cart-context'
 import { useFavorites } from '@/contexts/favorites-context'
+import { calculateShipping, getFreeShippingRemaining, type ShippingCalculation } from '@/lib/shipping'
 
 export default function CartPage() {
   const { cartItems, loading, updateQuantity, removeFromCart } = useCart()
   const { toggleFavorite } = useFavorites()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<any>(null)
+  const [shippingCalculation, setShippingCalculation] = useState<ShippingCalculation | null>(null)
+  const [freeShippingRemaining, setFreeShippingRemaining] = useState(0)
+  const [shippingLoading, setShippingLoading] = useState(false)
 
-  const total = cartItems.reduce((sum, item) => {
+  const subtotal = cartItems.reduce((sum, item) => {
     const price = item.product?.price || 0
     return sum + (price * item.quantity)
   }, 0)
+
+  const total = shippingCalculation ? shippingCalculation.total : subtotal
+
+  // Kargo hesaplama - hızlandırılmış ve optimize edilmiş
+  useEffect(() => {
+    const calculateShippingCost = async () => {
+      if (subtotal > 0) {
+        setShippingLoading(true)
+        try {
+          // Paralel olarak hem kargo hesaplama hem de ücretsiz kargo kalan tutarı hesapla
+          const [calculation, remaining] = await Promise.all([
+            calculateShipping(subtotal, 'standard'),
+            getFreeShippingRemaining(subtotal)
+          ])
+          
+          setShippingCalculation(calculation)
+          setFreeShippingRemaining(remaining)
+        } catch (error) {
+          console.error('Shipping calculation error:', error)
+          // Hata durumunda boş bırak, API'den gelecek değeri bekle
+          setShippingCalculation(null)
+          setFreeShippingRemaining(0)
+        } finally {
+          setShippingLoading(false)
+        }
+      } else {
+        // Sepet boşsa sıfırla
+        setShippingCalculation(null)
+        setFreeShippingRemaining(0)
+      }
+    }
+
+    // Debounce ile hızlandır - 300ms bekle
+    const timeoutId = setTimeout(calculateShippingCost, 300)
+    return () => clearTimeout(timeoutId)
+  }, [subtotal])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -145,19 +185,31 @@ export default function CartPage() {
                   <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Ara Toplam</span>
-                      <span>{total} TL</span>
+                      <span>{subtotal.toFixed(2)} TL</span>
                     </div>
                     
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Kargo</span>
-                      <span className="text-green-600">Ücretsiz</span>
+                      {shippingLoading || !shippingCalculation ? (
+                        <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+                      ) : (
+                        <span className={`font-medium ${shippingCalculation.isFreeShipping ? 'text-green-600' : 'text-gray-900'}`}>
+                          {shippingCalculation.isFreeShipping ? 'Ücretsiz' : `${shippingCalculation.shippingCost.toFixed(2)} TL`}
+                        </span>
+                      )}
                     </div>
+                    
+                    {freeShippingRemaining > 0 && !shippingLoading && shippingCalculation && (
+                      <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded-lg">
+                        💡 <strong>{freeShippingRemaining.toFixed(2)} TL</strong> daha ekleyin, kargo ücretsiz olsun!
+                      </div>
+                    )}
                   </div>
 
                   <div className="border-t border-gray-200 pt-4 mb-6">
                     <div className="flex justify-between items-center">
                       <span className="font-medium text-black">Toplam</span>
-                      <span className="text-xl font-bold text-black">{total} TL</span>
+                      <span className="text-xl font-bold text-black">{total.toFixed(2)} TL</span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">(KDV Dahil)</p>
                   </div>

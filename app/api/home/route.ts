@@ -45,16 +45,20 @@ export async function GET(request: Request) {
           show_on_homepage
         )
       `).eq('is_active', true).not('category_id', 'is', null).order('display_order').limit(8),
-      supabase.from('products').select(`
-        id, name, slug, price, is_active,
-        category:categories(name),
-        images:product_images(image_url, is_primary),
-        variants:product_variants(stock),
-        product_categories(
+      // Manuel seçilen vitrin ürünlerini çek
+      supabase.from('featured_products').select(`
+        display_order,
+        product:products(
+          id, name, slug, price, is_active,
           category:categories(name),
-          is_primary
+          images:product_images(image_url, is_primary),
+          variants:product_variants(stock),
+          product_categories(
+            category:categories(name),
+            is_primary
+          )
         )
-      `).eq('is_active', true).order('created_at', { ascending: false }).limit(8),
+      `).eq('is_active', true).eq('product.is_active', true).order('display_order').limit(8),
       supabase.from('home_blocks').select('*').eq('is_active', true).order('display_order'),
       supabase.from('site_settings').select('key, value').in('key', ['site_logo', 'top_banner'])
     ])
@@ -68,10 +72,13 @@ export async function GET(request: Request) {
     // Menu kategorilerini düzenle
     const categories = menuCategoriesRes.data?.map(item => item.category).filter((cat: any) => cat && cat.show_on_homepage) || []
 
+    // Vitrin ürünlerini düzenle - sadece product bilgilerini al
+    const featuredProducts = productsRes.data?.map((fp: any) => fp.product).filter((p: any) => p) || []
+
     return NextResponse.json({
       banners: bannersRes.data || [],
       categories,
-      products: productsRes.data || [],
+      products: featuredProducts,
       homeBlocks: blocksRes.data || [],
       settings
     }, {

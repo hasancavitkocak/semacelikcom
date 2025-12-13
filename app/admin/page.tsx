@@ -78,60 +78,52 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-              <ShoppingBag className="text-white" size={24} />
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+              <ShoppingBag className="text-gray-600" size={24} />
             </div>
-            <div className="text-blue-600">
-              <TrendingUp size={20} />
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Toplam Sipariş</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.orders}</p>
             </div>
           </div>
-          <p className="text-sm font-medium text-blue-700 mb-1">Toplam Sipariş</p>
-          <p className="text-3xl font-bold text-blue-900">{stats.orders}</p>
-          <p className="text-xs text-blue-600 mt-2">Toplam sipariş sayısı</p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center">
-              <TrendingUp className="text-white" size={24} />
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+              <TrendingUp className="text-gray-600" size={24} />
             </div>
-            <div className="text-green-600">
-              <TrendingUp size={20} />
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Toplam Gelir</p>
+              <p className="text-2xl font-bold text-gray-900">₺{stats.revenue.toFixed(2)}</p>
             </div>
           </div>
-          <p className="text-sm font-medium text-green-700 mb-1">Toplam Gelir</p>
-          <p className="text-3xl font-bold text-green-900">₺{stats.revenue.toFixed(2)}</p>
-          <p className="text-xs text-green-600 mt-2">Toplam satış geliri</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center">
-              <Package className="text-white" size={24} />
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+              <Package className="text-gray-600" size={24} />
             </div>
-            <div className="text-purple-600">
-              <Eye size={20} />
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Aktif Ürün</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.products}</p>
             </div>
           </div>
-          <p className="text-sm font-medium text-purple-700 mb-1">Aktif Ürün</p>
-          <p className="text-3xl font-bold text-purple-900">{stats.products}</p>
-          <p className="text-xs text-purple-600 mt-2">Satışa hazır ürünler</p>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-orange-600 rounded-xl flex items-center justify-center">
-              <Users className="text-white" size={24} />
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+              <Users className="text-gray-600" size={24} />
             </div>
-            <div className="text-orange-600">
-              <TrendingUp size={20} />
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Toplam Müşteri</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.users}</p>
             </div>
           </div>
-          <p className="text-sm font-medium text-orange-700 mb-1">Toplam Müşteri</p>
-          <p className="text-3xl font-bold text-orange-900">{stats.users}</p>
-          <p className="text-xs text-orange-600 mt-2">Kayıtlı müşteriler</p>
         </div>
       </div>
 
@@ -145,11 +137,11 @@ export default function AdminDashboard() {
           <div className="space-y-3">
             <Link 
               href="/admin/products/new" 
-              className="flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition group"
+              className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Package className="text-white" size={20} />
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <Package className="text-gray-600" size={20} />
                 </div>
                 <span className="font-medium text-gray-900">Yeni Ürün Ekle</span>
               </div>
@@ -158,11 +150,11 @@ export default function AdminDashboard() {
             
             <Link 
               href="/admin/categories" 
-              className="flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition group"
+              className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
-                  <FolderOpen className="text-white" size={20} />
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <FolderOpen className="text-gray-600" size={20} />
                 </div>
                 <span className="font-medium text-gray-900">Kategori Yönet</span>
               </div>
@@ -171,11 +163,11 @@ export default function AdminDashboard() {
             
             <Link 
               href="/admin/orders" 
-              className="flex items-center justify-between p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition group"
+              className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-                  <ShoppingBag className="text-white" size={20} />
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <ShoppingBag className="text-gray-600" size={20} />
                 </div>
                 <span className="font-medium text-gray-900">Siparişleri Görüntüle</span>
               </div>
@@ -190,22 +182,22 @@ export default function AdminDashboard() {
             <Eye className="text-gray-400" size={20} />
           </div>
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-              <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+            <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">Sistem çalışıyor</p>
                 <p className="text-xs text-gray-500">Tüm servisler aktif</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+            <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">Veritabanı bağlantısı</p>
                 <p className="text-xs text-gray-500">Bağlantı başarılı</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-              <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+            <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">Depolama alanı</p>
                 <p className="text-xs text-gray-500">%85 kullanımda</p>

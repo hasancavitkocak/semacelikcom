@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import MultiImageUpload from '@/components/multi-image-upload'
 import { supabase } from '@/lib/supabase'
-import { Edit, ArrowLeft, Save, Trash2, Plus, X, ChevronDown, Image as ImageIcon, Palette, Settings2 } from 'lucide-react'
+import { Edit, ArrowLeft, Save, Trash2, Plus, X, ChevronDown, Palette } from 'lucide-react'
 
 export default function EditProductPage() {
   const router = useRouter()
@@ -214,15 +214,11 @@ export default function EditProductPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl">
-            <div className="flex items-center justify-center h-64">
-              <div className="relative">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600/20 to-indigo-600/20 animate-pulse"></div>
-              </div>
-            </div>
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-900"></div>
+            <span className="ml-3 text-gray-600">Ürün yükleniyor...</span>
           </div>
         </div>
       </div>
@@ -230,483 +226,427 @@ export default function EditProductPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Premium Header */}
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <Link href="/admin/products">
-                  <Button variant="outline" size="sm" className="border-gray-200/50 bg-white/50 hover:bg-white/80 transition-all duration-200">
-                    <ArrowLeft size={16} className="mr-2" />
-                    Geri
-                  </Button>
-                </Link>
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Edit className="text-white" size={24} />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
-                    Ürün Düzenle
-                  </h1>
-                  <p className="text-gray-600 font-medium font-mono">
-                    #{productId.slice(0, 8)}
-                  </p>
-                </div>
+    <div className="space-y-6">
+      {/* Admin Header */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center gap-4 mb-4">
+          <Link 
+            href="/admin/products"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition text-sm font-medium"
+          >
+            <ArrowLeft size={16} />
+            Ürünler
+          </Link>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-gray-900">Ürün Düzenle</h1>
+            <p className="text-gray-600 mt-1">#{productId.slice(0, 8)}</p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Button 
+              type="button"
+              onClick={handleDelete}
+              variant="destructive"
+              className="px-4"
+            >
+              <Trash2 size={16} className="mr-2" />
+              Sil
+            </Button>
+            <Button 
+              type="submit" 
+              form="product-form"
+              disabled={saving}
+              className="bg-gray-900 hover:bg-black text-white px-6"
+            >
+              <Save size={16} className="mr-2" />
+              {saving ? 'Kaydediliyor...' : 'Kaydet'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <form id="product-form" onSubmit={handleSubmit}>
+        {/* Temel Bilgiler */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Temel Bilgiler</h2>
+            <p className="text-gray-600 text-sm">Ürün adı, fiyat ve kategori bilgileri</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Ürün Adı *</Label>
+              <Input 
+                value={formData.name} 
+                onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                required 
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                placeholder="Ürün adını girin"
+              />
+            </div>
+            
+            <div className="md:col-span-2">
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Açıklama</Label>
+              <textarea 
+                rows={3} 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-transparent" 
+                value={formData.description} 
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="Ürün açıklamasını girin"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Fiyat (₺) *</Label>
+              <Input 
+                type="number" 
+                step="0.01" 
+                value={formData.price} 
+                onChange={(e) => setFormData({...formData, price: e.target.value})} 
+                required 
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                placeholder="0.00"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Ana Kategori *</Label>
+              <div className="relative">
+                <select 
+                  className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer" 
+                  value={primaryCategory} 
+                  onChange={(e) => {
+                    setPrimaryCategory(e.target.value)
+                    if (e.target.value && !selectedCategories.includes(e.target.value)) {
+                      setSelectedCategories([...selectedCategories, e.target.value])
+                    }
+                  }}
+                  required
+                >
+                  <option value="">Ana kategori seçin</option>
+                  {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <Button variant="destructive" onClick={handleDelete} className="shadow-lg hover:shadow-xl transition-all duration-200">
-                <Trash2 size={16} className="mr-2" />
-                Ürünü Sil
-              </Button>
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Marka</Label>
+              <Input 
+                value={formData.brand} 
+                onChange={(e) => setFormData({...formData, brand: e.target.value})} 
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                placeholder="Marka adı"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Sezon</Label>
+              <div className="relative">
+                <select 
+                  className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer" 
+                  value={formData.season} 
+                  onChange={(e) => setFormData({...formData, season: e.target.value})}
+                >
+                  <option value="">Seçiniz</option>
+                  <option value="yaz">Yaz</option>
+                  <option value="kış">Kış</option>
+                  <option value="ilkbahar">İlkbahar</option>
+                  <option value="sonbahar">Sonbahar</option>
+                  <option value="her-mevsim">Her Mevsim</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+              </div>
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Kumaş Tipi</Label>
+              <Input 
+                value={formData.fabric_type} 
+                onChange={(e) => setFormData({...formData, fabric_type: e.target.value})} 
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                placeholder="Örn: Pamuk"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Kumaş Bileşimi</Label>
+              <Input 
+                value={formData.fabric_composition} 
+                onChange={(e) => setFormData({...formData, fabric_composition: e.target.value})} 
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                placeholder="Örn: %100 Pamuk"
+              />
+            </div>
+            
+            <div className="md:col-span-2">
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Bakım Talimatları</Label>
+              <textarea 
+                rows={2} 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-transparent" 
+                value={formData.care_instructions} 
+                onChange={(e) => setFormData({...formData, care_instructions: e.target.value})}
+                placeholder="Yıkama ve bakım talimatları"
+              />
+            </div>
+            
+            <div className="md:col-span-2">
+              <label className="flex items-center gap-3 cursor-pointer bg-green-50 rounded-lg p-4 border border-green-200 hover:bg-green-100 transition-colors">
+                <input 
+                  type="checkbox" 
+                  checked={formData.is_active} 
+                  onChange={(e) => setFormData({...formData, is_active: e.target.checked})} 
+                  className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900" 
+                />
+                <div>
+                  <span className="font-medium text-gray-900">Ürün Aktif</span>
+                  <p className="text-sm text-gray-600">Aktif ürünler sitede görüntülenir</p>
+                </div>
+              </label>
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* Temel Bilgiler */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-6 mb-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Settings2 className="text-white" size={20} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Temel Bilgiler</h2>
-                <p className="text-sm text-gray-500">Ürün adı, fiyat ve kategori bilgileri</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="md:col-span-2 lg:col-span-4">
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">Ürün Adı *</Label>
-                <Input 
-                  value={formData.name} 
-                  onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                  required 
-                  className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all duration-200"
-                  placeholder="Ürün adını girin"
-                />
-              </div>
-              
-              <div className="md:col-span-2 lg:col-span-4">
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">Açıklama</Label>
-                <textarea 
-                  rows={3} 
-                  className="w-full border border-gray-200/50 rounded-xl px-4 py-3 bg-white/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all duration-200" 
-                  value={formData.description} 
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Ürün açıklamasını girin"
-                />
-              </div>
-              
-              <div>
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">Fiyat (₺) *</Label>
-                <Input 
-                  type="number" 
-                  step="0.01" 
-                  value={formData.price} 
-                  onChange={(e) => setFormData({...formData, price: e.target.value})} 
-                  required 
-                  className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all duration-200"
-                  placeholder="0.00"
-                />
-              </div>
-              
-              <div className="md:col-span-2">
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">Kategoriler</Label>
-                <div className="space-y-3">
-                  {/* Ana Kategori Seçimi */}
-                  <div>
-                    <Label className="text-xs font-medium text-gray-600 mb-1 block">Ana Kategori *</Label>
-                    <div className="relative">
-                      <select 
-                        className="w-full appearance-none border border-gray-200/50 rounded-xl px-4 py-2.5 bg-white/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all duration-200 cursor-pointer" 
-                        value={primaryCategory} 
-                        onChange={(e) => {
-                          setPrimaryCategory(e.target.value)
-                          if (e.target.value && !selectedCategories.includes(e.target.value)) {
-                            setSelectedCategories([...selectedCategories, e.target.value])
-                          }
-                        }}
-                        required
-                      >
-                        <option value="">Ana kategori seçin</option>
-                        {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                    </div>
-                  </div>
-
-                  {/* Çoklu Kategori Seçimi */}
-                  <div>
-                    <Label className="text-xs font-medium text-gray-600 mb-2 block">Ek Kategoriler</Label>
-                    <div className="grid grid-cols-2 gap-2 max-h-24 overflow-y-auto border border-gray-200/50 rounded-xl p-3 bg-white/30">
-                      {categories.map(category => (
-                        <label key={category.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                          <input
-                            type="checkbox"
-                            checked={selectedCategories.includes(category.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedCategories([...selectedCategories, category.id])
-                              } else {
-                                setSelectedCategories(selectedCategories.filter(id => id !== category.id))
-                                if (primaryCategory === category.id) {
-                                  setPrimaryCategory('')
-                                }
-                              }
-                            }}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                          <span className="text-xs text-gray-700">{category.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Seçilen: {selectedCategories.length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">Marka</Label>
-                <Input 
-                  value={formData.brand} 
-                  onChange={(e) => setFormData({...formData, brand: e.target.value})} 
-                  className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all duration-200"
-                  placeholder="Marka adı"
-                />
-              </div>
-              
-              <div>
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">Sezon</Label>
-                <div className="relative">
-                  <select 
-                    className="w-full appearance-none border border-gray-200/50 rounded-xl px-4 py-2.5 bg-white/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all duration-200 cursor-pointer" 
-                    value={formData.season} 
-                    onChange={(e) => setFormData({...formData, season: e.target.value})}
-                  >
-                    <option value="">Seçiniz</option>
-                    <option value="yaz">Yaz</option>
-                    <option value="kış">Kış</option>
-                    <option value="ilkbahar">İlkbahar</option>
-                    <option value="sonbahar">Sonbahar</option>
-                    <option value="her-mevsim">Her Mevsim</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">Kumaş Tipi</Label>
-                <Input 
-                  value={formData.fabric_type} 
-                  onChange={(e) => setFormData({...formData, fabric_type: e.target.value})} 
-                  className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all duration-200"
-                  placeholder="Örn: Pamuk"
-                />
-              </div>
-              
-              <div>
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">Kumaş Bileşimi</Label>
-                <Input 
-                  value={formData.fabric_composition} 
-                  onChange={(e) => setFormData({...formData, fabric_composition: e.target.value})} 
-                  className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all duration-200"
-                  placeholder="Örn: %100 Pamuk"
-                />
-              </div>
-              
-              <div className="md:col-span-2">
-                <Label className="text-sm font-semibold text-gray-700 mb-2 block">Bakım Talimatları</Label>
-                <textarea 
-                  rows={2} 
-                  className="w-full border border-gray-200/50 rounded-xl px-4 py-3 bg-white/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all duration-200" 
-                  value={formData.care_instructions} 
-                  onChange={(e) => setFormData({...formData, care_instructions: e.target.value})}
-                  placeholder="Yıkama ve bakım talimatları"
-                />
-              </div>
-              
-              <div className="md:col-span-2 lg:col-span-4">
-                <label className="flex items-center gap-3 cursor-pointer bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200/50 hover:shadow-md transition-all duration-200">
-                  <input 
-                    type="checkbox" 
-                    checked={formData.is_active} 
-                    onChange={(e) => setFormData({...formData, is_active: e.target.checked})} 
-                    className="w-5 h-5 rounded border-green-300 text-green-600 focus:ring-green-500" 
-                  />
-                  <div>
-                    <span className="font-semibold text-green-800">Ürün Aktif</span>
-                    <p className="text-sm text-green-600">Aktif ürünler sitede görüntülenir</p>
-                  </div>
-                </label>
-              </div>
-            </div>
+        {/* Renk ve Beden Yönetimi */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Renk ve Beden Yönetimi</h2>
+            <p className="text-gray-600 text-sm">Ürün varyantlarını ve stok bilgilerini yönetin</p>
           </div>
-
-          {/* Ürün Görselleri */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-6 mb-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
-                <ImageIcon className="text-white" size={20} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Ürün Görselleri</h2>
-                <p className="text-sm text-gray-500">Ürün fotoğraflarını yönetin</p>
-              </div>
-            </div>
-            
-            {images.length > 0 && (
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <Label className="text-sm font-semibold text-gray-700">Mevcut Görseller ({images.length})</Label>
-                  <p className="text-xs text-gray-500">Silmek için X'e tıklayın</p>
-                </div>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
-                  {images.map((img, index) => (
-                    <div key={img.id} className="relative group">
-                      <div className={`aspect-square rounded-xl overflow-hidden border-2 bg-gray-50 shadow-sm group-hover:shadow-lg transition-all duration-200 ${
-                        img.is_primary ? 'border-purple-400 ring-2 ring-purple-200' : 'border-gray-200/50 group-hover:border-blue-300'
-                      }`}>
-                        <img src={img.image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                      </div>
-                      {img.is_primary && (
-                        <span className="absolute top-1 left-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow-sm">ANA</span>
-                      )}
-                      <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">
-                        {index + 1}
-                      </span>
-                      <button 
-                        type="button" 
-                        onClick={() => handleDeleteImage(img.id)} 
-                        className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg"
-                      >
-                        <X size={10} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <div className="border-t border-gray-200/50 pt-6">
-              <Label className="text-sm font-semibold text-gray-700 mb-3 block">Yeni Görsel Ekle</Label>
-              <MultiImageUpload 
-                images={newImages}
-                onImagesChange={setNewImages}
-                maxImages={20}
-              />
-            </div>
-          </div>
-
-          {/* Renk ve Beden Yönetimi */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-6 mb-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Palette className="text-white" size={20} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Renk ve Beden Yönetimi</h2>
-                <p className="text-sm text-gray-500">Ürün varyantlarını ve stok bilgilerini yönetin</p>
-              </div>
-            </div>
-            
-            {variants.length > 0 && (
-              <div className="mb-6">
-                <Label className="text-sm font-semibold text-gray-700 mb-3 block">Mevcut Varyantlar ({variants.length})</Label>
-                <div className="bg-white/50 rounded-xl border border-gray-200/50 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-gradient-to-r from-gray-50/80 to-orange-50/80 border-b border-gray-200/50">
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Renk</th>
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Beden</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-700 text-sm">Stok</th>
-                          <th className="text-center py-3 px-4 font-semibold text-gray-700 text-sm">İşlemler</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100/50">
-                        {variants.map((variant) => (
-                          <tr key={variant.id} className="hover:bg-orange-50/30 transition-all duration-200">
-                            {editingVariant === variant.id ? (
-                              <>
-                                <td className="py-3 px-4">
-                                  <select 
-                                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white" 
-                                    value={variant.color_id} 
-                                    onChange={(e) => setVariants(variants.map(v => v.id === variant.id ? {...v, color_id: e.target.value} : v))}
+          
+          {variants.length > 0 && (
+            <div className="mb-6">
+              <Label className="text-sm font-medium text-gray-700 mb-3 block">Mevcut Varyantlar ({variants.length})</Label>
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">Renk</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-900 text-sm">Beden</th>
+                        <th className="text-center py-3 px-4 font-medium text-gray-900 text-sm">Stok</th>
+                        <th className="text-center py-3 px-4 font-medium text-gray-900 text-sm">İşlemler</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {variants.map((variant) => (
+                        <tr key={variant.id} className="hover:bg-gray-50 transition-colors">
+                          {editingVariant === variant.id ? (
+                            <>
+                              <td className="py-3 px-4">
+                                <select 
+                                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white" 
+                                  value={variant.color_id} 
+                                  onChange={(e) => setVariants(variants.map(v => v.id === variant.id ? {...v, color_id: e.target.value} : v))}
+                                >
+                                  {colors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                              </td>
+                              <td className="py-3 px-4">
+                                <select 
+                                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white" 
+                                  value={variant.size_id} 
+                                  onChange={(e) => setVariants(variants.map(v => v.id === variant.id ? {...v, size_id: e.target.value} : v))}
+                                >
+                                  {sizes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <Input 
+                                  type="number" 
+                                  className="w-20 h-8 text-sm text-center mx-auto" 
+                                  value={variant.stock} 
+                                  onChange={(e) => setVariants(variants.map(v => v.id === variant.id ? {...v, stock: parseInt(e.target.value) || 0} : v))} 
+                                />
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    onClick={() => handleUpdateVariant(variant.id, { color_id: variant.color_id, size_id: variant.size_id, stock: variant.stock })}
+                                    className="bg-green-600 hover:bg-green-700 h-8 px-3"
                                   >
-                                    {colors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                  </select>
-                                </td>
-                                <td className="py-3 px-4">
-                                  <select 
-                                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white" 
-                                    value={variant.size_id} 
-                                    onChange={(e) => setVariants(variants.map(v => v.id === variant.id ? {...v, size_id: e.target.value} : v))}
+                                    Kaydet
+                                  </Button>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => { setEditingVariant(null); loadVariants(); }}
+                                    className="h-8 px-3"
                                   >
-                                    {sizes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                  </select>
-                                </td>
-                                <td className="py-3 px-4 text-center">
-                                  <Input 
-                                    type="number" 
-                                    className="w-20 h-8 text-sm text-center mx-auto" 
-                                    value={variant.stock} 
-                                    onChange={(e) => setVariants(variants.map(v => v.id === variant.id ? {...v, stock: parseInt(e.target.value) || 0} : v))} 
+                                    İptal
+                                  </Button>
+                                </div>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-5 h-5 rounded-full border border-gray-300" 
+                                    style={{ backgroundColor: variant.colors?.hex_code || '#ccc' }} 
                                   />
-                                </td>
-                                <td className="py-3 px-4">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <Button 
-                                      type="button" 
-                                      size="sm" 
-                                      onClick={() => handleUpdateVariant(variant.id, { color_id: variant.color_id, size_id: variant.size_id, stock: variant.stock })}
-                                      className="bg-green-600 hover:bg-green-700"
-                                    >
-                                      Kaydet
-                                    </Button>
-                                    <Button 
-                                      type="button" 
-                                      size="sm" 
-                                      variant="outline" 
-                                      onClick={() => { setEditingVariant(null); loadVariants(); }}
-                                    >
-                                      İptal
-                                    </Button>
-                                  </div>
-                                </td>
-                              </>
-                            ) : (
-                              <>
-                                <td className="py-3 px-4">
-                                  <div className="flex items-center gap-2">
-                                    <div 
-                                      className="w-6 h-6 rounded-full border-2 border-gray-200 shadow-sm" 
-                                      style={{ backgroundColor: variant.colors?.hex_code || '#ccc' }} 
-                                    />
-                                    <span className="font-medium text-gray-900">{variant.colors?.name}</span>
-                                  </div>
-                                </td>
-                                <td className="py-3 px-4">
-                                  <span className="font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded-lg text-sm">{variant.sizes?.name}</span>
-                                </td>
-                                <td className="py-3 px-4 text-center">
-                                  <span className={`font-bold text-sm px-3 py-1 rounded-full ${
-                                    variant.stock > 10 
-                                      ? 'bg-green-100 text-green-700' 
-                                      : variant.stock > 0 
-                                        ? 'bg-yellow-100 text-yellow-700' 
-                                        : 'bg-red-100 text-red-700'
-                                  }`}>
-                                    {variant.stock}
-                                  </span>
-                                </td>
-                                <td className="py-3 px-4">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <Button 
-                                      type="button" 
-                                      size="sm" 
-                                      variant="outline" 
-                                      onClick={() => setEditingVariant(variant.id)}
-                                      className="hover:bg-blue-50 hover:border-blue-300"
-                                    >
-                                      <Edit size={14} className="mr-1" />
-                                      Düzenle
-                                    </Button>
-                                    <Button 
-                                      type="button" 
-                                      size="sm" 
-                                      variant="destructive" 
-                                      onClick={() => handleDeleteVariant(variant.id)}
-                                    >
-                                      <Trash2 size={14} />
-                                    </Button>
-                                  </div>
-                                </td>
-                              </>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                                  <span className="font-medium text-gray-900">{variant.colors?.name}</span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded text-sm">{variant.sizes?.name}</span>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className={`font-medium text-sm px-2 py-1 rounded ${
+                                  variant.stock > 10 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : variant.stock > 0 
+                                      ? 'bg-yellow-100 text-yellow-800' 
+                                      : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {variant.stock}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => setEditingVariant(variant.id)}
+                                    className="hover:bg-blue-50 hover:border-blue-300 h-8 px-3"
+                                  >
+                                    <Edit size={14} className="mr-1" />
+                                    Düzenle
+                                  </Button>
+                                  <Button 
+                                    type="button" 
+                                    size="sm" 
+                                    variant="destructive" 
+                                    onClick={() => handleDeleteVariant(variant.id)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Trash2 size={14} />
+                                  </Button>
+                                </div>
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            )}
-            
-            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl p-6 border border-orange-200/50">
-              <Label className="text-sm font-semibold text-orange-800 mb-4 block">Yeni Varyant Ekle</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="relative">
-                  <select 
-                    className="w-full appearance-none border border-orange-200 rounded-xl px-4 py-2.5 bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all duration-200 cursor-pointer" 
-                    value={newVariant.color_id} 
-                    onChange={(e) => setNewVariant({...newVariant, color_id: e.target.value})}
-                  >
-                    <option value="">Renk Seçin</option>
-                    {colors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-orange-400 pointer-events-none" size={16} />
-                </div>
-                <div className="relative">
-                  <select 
-                    className="w-full appearance-none border border-orange-200 rounded-xl px-4 py-2.5 bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all duration-200 cursor-pointer" 
-                    value={newVariant.size_id} 
-                    onChange={(e) => setNewVariant({...newVariant, size_id: e.target.value})}
-                  >
-                    <option value="">Beden Seçin</option>
-                    {sizes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-orange-400 pointer-events-none" size={16} />
-                </div>
-                <Input 
-                  type="number" 
-                  placeholder="Stok Adedi" 
-                  value={newVariant.stock} 
-                  onChange={(e) => setNewVariant({...newVariant, stock: parseInt(e.target.value) || 0})} 
-                  className="border-orange-200 focus:ring-orange-500/20 focus:border-orange-500/30"
-                />
-                <Button 
-                  type="button" 
-                  onClick={handleAddVariant} 
-                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+            </div>
+          )}
+          
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <Label className="text-sm font-medium text-gray-900 mb-4 block">Yeni Varyant Ekle</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <select 
+                  className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer" 
+                  value={newVariant.color_id} 
+                  onChange={(e) => setNewVariant({...newVariant, color_id: e.target.value})}
                 >
-                  <Plus size={18} className="mr-2" />
-                  Varyant Ekle
-                </Button>
+                  <option value="">Renk Seçin</option>
+                  {colors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
+              <div className="relative">
+                <select 
+                  className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer" 
+                  value={newVariant.size_id} 
+                  onChange={(e) => setNewVariant({...newVariant, size_id: e.target.value})}
+                >
+                  <option value="">Beden Seçin</option>
+                  {sizes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+              </div>
+              <Input 
+                type="number" 
+                placeholder="Stok Adedi" 
+                value={newVariant.stock} 
+                onChange={(e) => setNewVariant({...newVariant, stock: parseInt(e.target.value) || 0})} 
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              />
+              <Button 
+                type="button" 
+                onClick={handleAddVariant} 
+                className="bg-gray-900 hover:bg-black text-white"
+              >
+                <Plus size={16} className="mr-2" />
+                Varyant Ekle
+              </Button>
             </div>
           </div>
 
-          {/* Kaydet Butonu */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-6 sticky bottom-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                type="submit" 
-                disabled={saving} 
-                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 py-6 text-lg font-semibold"
-              >
-                <Save size={22} className="mr-2" />
-                {saving ? 'Kaydediliyor...' : 'Tüm Değişiklikleri Kaydet'}
-              </Button>
-              <Link href="/admin/products">
-                <Button type="button" variant="outline" className="w-full sm:w-auto px-8 py-6 border-gray-200/50 bg-white/50 hover:bg-white/80 transition-all duration-200">
-                  İptal
-                </Button>
-              </Link>
+          {variants.length === 0 && (
+            <div className="mt-4 text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                <Palette size={20} className="text-gray-600" />
+              </div>
+              <p className="text-gray-600 font-medium">Henüz varyant eklenmedi</p>
+              <p className="text-sm text-gray-500">Yukarıdan renk ve beden seçerek varyant ekleyin</p>
             </div>
-            <p className="text-sm text-gray-500 mt-4 text-center">
-              💡 Tüm değişiklikler bu butona basıldığında kaydedilir.
-            </p>
+          )}
+        </div>
+
+        {/* Ürün Görselleri - En Alta Taşındı */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Ürün Görselleri</h2>
+            <p className="text-gray-600 text-sm">Ürün fotoğraflarını yönetin</p>
           </div>
-        </form>
-      </div>
+          
+          {images.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-sm font-medium text-gray-700">Mevcut Görseller ({images.length})</Label>
+                <p className="text-xs text-gray-500">Silmek için X'e tıklayın</p>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+                {images.map((img, index) => (
+                  <div key={img.id} className="relative group">
+                    <div className={`aspect-square rounded-lg overflow-hidden border-2 bg-gray-50 shadow-sm group-hover:shadow-lg transition-all duration-200 ${
+                      img.is_primary ? 'border-purple-400 ring-2 ring-purple-200' : 'border-gray-200 group-hover:border-gray-300'
+                    }`}>
+                      <img src={img.image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    {img.is_primary && (
+                      <span className="absolute top-1 left-1 bg-purple-600 text-white text-[9px] px-1.5 py-0.5 rounded-full font-bold shadow-sm">ANA</span>
+                    )}
+                    <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded font-mono">
+                      {index + 1}
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => handleDeleteImage(img.id)} 
+                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg"
+                    >
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="border-t border-gray-200 pt-6">
+            <Label className="text-sm font-medium text-gray-700 mb-3 block">Yeni Görsel Ekle</Label>
+            <MultiImageUpload 
+              images={newImages}
+              onImagesChange={setNewImages}
+              maxImages={20}
+            />
+          </div>
+        </div>
+      </form>
     </div>
   )
 }

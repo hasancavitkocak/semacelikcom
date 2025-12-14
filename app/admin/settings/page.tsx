@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase'
+import { Settings, Globe, Mail, Phone, Instagram, Facebook, Image as ImageIcon } from 'lucide-react'
 import ImageUpload from '@/components/image-upload'
+import AdminHeader from '@/components/admin-header'
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -20,9 +21,7 @@ export default function AdminSettingsPage() {
     contact_phone: '',
     instagram_url: '',
     facebook_url: '',
-    whatsapp_number: '',
-    free_shipping_threshold: '500',
-    shipping_cost: '29.90'
+    whatsapp_number: ''
   })
 
   useEffect(() => {
@@ -53,9 +52,7 @@ export default function AdminSettingsPage() {
           contact_phone: '+90 555 123 4567',
           instagram_url: 'https://instagram.com/semacelik',
           facebook_url: 'https://facebook.com/semacelik',
-          whatsapp_number: '+905551234567',
-          free_shipping_threshold: '500',
-          shipping_cost: '29.90'
+          whatsapp_number: '+905551234567'
         })
         setLoading(false)
         return
@@ -75,9 +72,7 @@ export default function AdminSettingsPage() {
         contact_phone: settingsObj.contact_phone || '',
         instagram_url: settingsObj.instagram_url || '',
         facebook_url: settingsObj.facebook_url || '',
-        whatsapp_number: settingsObj.whatsapp_number || '',
-        free_shipping_threshold: settingsObj.free_shipping_threshold || '500',
-        shipping_cost: settingsObj.shipping_cost || '29.90'
+        whatsapp_number: settingsObj.whatsapp_number || ''
       })
     } catch (error: any) {
       console.error('Load settings error:', error)
@@ -168,20 +163,38 @@ export default function AdminSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-gray-900"></div>
+      <div className="space-y-6">
+        <AdminHeader
+          title="Site Ayarları"
+          description="Site genelindeki ayarları buradan yönetin"
+        />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-900"></div>
+            <span className="ml-3 text-gray-600">Ayarlar yükleniyor...</span>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Site Ayarları</h1>
-        <p className="text-gray-600 mt-1">Site genelindeki ayarları buradan yönetin</p>
-      </div>
+    <div className="space-y-6">
+      <AdminHeader
+        title="Site Ayarları"
+        description="Site genelindeki ayarları buradan yönetin"
+        actions={
+          <Button 
+            onClick={handleSave} 
+            disabled={saving}
+            className="bg-gray-900 hover:bg-black text-white px-6"
+          >
+            {saving ? 'Kaydediliyor...' : 'Kaydet'}
+          </Button>
+        }
+      />
       
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 max-w-4xl">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="font-semibold text-blue-900 mb-2">📋 Kurulum Talimatları</h3>
         <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
           <li>Supabase Dashboard → SQL Editor'e gidin</li>
@@ -191,55 +204,70 @@ export default function AdminSettingsPage() {
         </ol>
       </div>
 
-      <div className="grid gap-6 max-w-4xl">
+      <div className="grid gap-6">
         {/* Genel Ayarlar */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Genel Ayarlar</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <Globe className="text-gray-600" size={20} />
+            </div>
             <div>
-              <Label>Site Adı</Label>
+              <h2 className="text-lg font-semibold text-gray-900">Genel Ayarlar</h2>
+              <p className="text-gray-600 text-sm">Site temel bilgileri</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Site Adı</Label>
               <Input
                 value={settings.site_name}
                 onChange={(e) => setSettings({ ...settings, site_name: e.target.value })}
                 placeholder="SEMACELIK.COM"
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
 
             <div>
-              <Label>Site Açıklaması</Label>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Site Açıklaması</Label>
               <Input
                 value={settings.site_description}
                 onChange={(e) => setSettings({ ...settings, site_description: e.target.value })}
                 placeholder="Kaliteli ve şık kadın giyim ürünleri"
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
 
             <div>
-              <Label>Üst Banner Mesajı</Label>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Üst Banner Mesajı</Label>
               <Input
                 value={settings.top_banner}
                 onChange={(e) => setSettings({ ...settings, top_banner: e.target.value })}
                 placeholder="Yeni Web Sitemiz Yayında! 🎉"
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Sitenin en üstünde görünen duyuru mesajı. Emoji kullanabilirsiniz.
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Logo */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Logo</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <ImageIcon className="text-gray-600" size={20} />
+            </div>
             <div>
-              <Label>Mevcut Logo</Label>
+              <h2 className="text-lg font-semibold text-gray-900">Logo</h2>
+              <p className="text-gray-600 text-sm">Site logosu ayarları</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Mevcut Logo</Label>
               {settings.site_logo && (
-                <div className="mt-2 p-6 border rounded-lg bg-white inline-block">
+                <div className="mt-2 p-6 border border-gray-200 rounded-lg bg-gray-50 inline-block">
                   <img 
                     src={settings.site_logo} 
                     alt="Logo" 
@@ -254,7 +282,7 @@ export default function AdminSettingsPage() {
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-blue-900 mb-2">📐 Logo Önerileri</h4>
+              <h4 className="font-medium text-blue-900 mb-2">📐 Logo Önerileri</h4>
               <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
                 <li><strong>Format:</strong> SVG (en iyi) veya PNG</li>
                 <li><strong>Boyut:</strong> En az 400x120px (yüksek çözünürlük için)</li>
@@ -264,134 +292,95 @@ export default function AdminSettingsPage() {
             </div>
 
             <div>
-              <Label>Yeni Logo Yükle</Label>
-              <ImageUpload onImageUpload={handleLogoUpload} imageType="banner" />
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Yeni Logo Yükle</Label>
+              <div className="border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-lg p-6 text-center bg-gray-50 transition-colors">
+                <ImageUpload onImageUpload={handleLogoUpload} imageType="banner" />
+              </div>
             </div>
 
             <div>
-              <Label>Veya Logo URL'i</Label>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Veya Logo URL'i</Label>
               <Input
                 value={settings.site_logo}
                 onChange={(e) => setSettings({ ...settings, site_logo: e.target.value })}
                 placeholder="https://... veya /logo.svg"
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* İletişim Bilgileri */}
-        <Card>
-          <CardHeader>
-            <CardTitle>İletişim Bilgileri</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <Mail className="text-gray-600" size={20} />
+            </div>
             <div>
-              <Label>E-posta</Label>
+              <h2 className="text-lg font-semibold text-gray-900">İletişim Bilgileri</h2>
+              <p className="text-gray-600 text-sm">İletişim ve sosyal medya</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">E-posta</Label>
               <Input
                 type="email"
                 value={settings.contact_email}
                 onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
                 placeholder="info@semacelik.com"
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
 
             <div>
-              <Label>Telefon</Label>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Telefon</Label>
               <Input
                 type="tel"
                 value={settings.contact_phone}
                 onChange={(e) => setSettings({ ...settings, contact_phone: e.target.value })}
                 placeholder="+90 555 123 4567"
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
 
             <div>
-              <Label>WhatsApp Numarası</Label>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">WhatsApp Numarası</Label>
               <Input
                 type="tel"
                 value={settings.whatsapp_number}
                 onChange={(e) => setSettings({ ...settings, whatsapp_number: e.target.value })}
                 placeholder="+905551234567"
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Ülke kodu ile birlikte, boşluksuz (örn: +905551234567)
               </p>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Sosyal Medya */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Sosyal Medya</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <div>
-              <Label>Instagram URL</Label>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Instagram URL</Label>
               <Input
                 value={settings.instagram_url}
                 onChange={(e) => setSettings({ ...settings, instagram_url: e.target.value })}
                 placeholder="https://instagram.com/semacelik"
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
 
             <div>
-              <Label>Facebook URL</Label>
+              <Label className="text-sm font-medium text-gray-700 mb-2 block">Facebook URL</Label>
               <Input
                 value={settings.facebook_url}
                 onChange={(e) => setSettings({ ...settings, facebook_url: e.target.value })}
                 placeholder="https://facebook.com/semacelik"
+                className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Kargo Ayarları */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Kargo Ayarları</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Ücretsiz Kargo Limiti (₺)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={settings.free_shipping_threshold}
-                onChange={(e) => setSettings({ ...settings, free_shipping_threshold: e.target.value })}
-                placeholder="500"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Bu tutarın üzerindeki siparişlerde kargo ücretsiz olur
-              </p>
-            </div>
-
-            <div>
-              <Label>Kargo Ücreti (₺)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={settings.shipping_cost}
-                onChange={(e) => setSettings({ ...settings, shipping_cost: e.target.value })}
-                placeholder="29.90"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Ücretsiz kargo limitinin altındaki siparişler için kargo ücreti
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Kaydet Butonu */}
-        <div className="flex gap-4">
-          <Button 
-            onClick={handleSave} 
-            disabled={saving}
-            className="bg-gray-900 hover:bg-black text-white font-medium px-8"
-          >
-            {saving ? 'Kaydediliyor...' : '✓ Ayarları Kaydet'}
-          </Button>
+          </div>
         </div>
+
+
       </div>
     </div>
   )

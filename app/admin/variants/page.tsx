@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase'
-import { Palette, Plus, Edit, Trash2, Search, Filter, TrendingUp, Ruler, Tag, MoreHorizontal } from 'lucide-react'
+import { Palette, Plus, Edit, Trash2, Search, Filter, Ruler, Tag } from 'lucide-react'
+import AdminHeader from '@/components/admin-header'
 
 export default function AdminVariantsPage() {
   const [colors, setColors] = useState<any[]>([])
@@ -182,13 +183,10 @@ export default function AdminVariantsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Sade Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-1">Renk & Beden Yönetimi</h1>
-        <p className="text-gray-600">
-          {colors.length} renk • {sizes.length} beden tanımlı
-        </p>
-      </div>
+      <AdminHeader
+        title="Renk & Beden Yönetimi"
+        description={`${colors.length} renk • ${sizes.length} beden tanımlı`}
+      />
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Renkler Bölümü */}

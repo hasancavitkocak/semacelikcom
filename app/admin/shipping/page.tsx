@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
-import { Truck, Package, Calculator, TrendingUp, MapPin, Clock, DollarSign } from 'lucide-react'
+import { Truck, Package, Calculator, MapPin, Clock, DollarSign } from 'lucide-react'
+import AdminHeader from '@/components/admin-header'
 
 export default function AdminShippingPage() {
   const [settings, setSettings] = useState({
@@ -111,327 +111,304 @@ export default function AdminShippingPage() {
   const testShipping = calculateShipping(parseFloat(testAmount))
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-600 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Truck className="text-white" size={24} />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-orange-800 to-red-800 bg-clip-text text-transparent">
-                    Kargo Yönetimi
-                  </h1>
-                  <p className="text-gray-600 font-medium">
-                    Kargo ücretleri ve teslimat ayarları
-                  </p>
-                </div>
+    <div className="space-y-6">
+      <AdminHeader
+        title="Kargo Yönetimi"
+        description="Kargo ücretleri ve teslimat ayarları"
+        actions={
+          <Button 
+            onClick={handleSave}
+            disabled={saving || loading}
+            className="bg-gray-900 hover:bg-black text-white px-6"
+          >
+            {saving ? 'Kaydediliyor...' : 'Kaydet'}
+          </Button>
+        }
+      />
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Kargo Ücretleri */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="text-gray-600" size={20} />
               </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 bg-white/70 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20 shadow-sm">
-                <TrendingUp className="text-green-600" size={16} />
-                <span className="text-sm font-semibold text-gray-700">Aktif sistem</span>
-              </div>
-              <Button 
-                onClick={handleSave}
-                disabled={saving || loading}
-                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6"
-              >
-                {saving ? 'Kaydediliyor...' : 'Kaydet'}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Kargo Ücretleri */}
-          <div className="space-y-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-600 to-red-600 rounded-xl flex items-center justify-center">
-                  <DollarSign className="text-white" size={20} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Kargo Ücretleri</h2>
-                  <p className="text-gray-600 text-sm">Teslimat ücret ayarları</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                    Ücretsiz Kargo Limiti (₺)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={settings.free_shipping_threshold}
-                    onChange={(e) => setSettings({ ...settings, free_shipping_threshold: e.target.value })}
-                    placeholder="500"
-                    className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all duration-200"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Bu tutarın üzerindeki siparişlerde kargo ücretsiz olur
-                  </p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                    Standart Kargo Ücreti (₺)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={settings.shipping_cost}
-                    onChange={(e) => setSettings({ ...settings, shipping_cost: e.target.value })}
-                    placeholder="29.90"
-                    className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all duration-200"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Ücretsiz kargo limitinin altındaki siparişler için
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <Label className="text-sm font-semibold text-gray-700">
-                      Hızlı Kargo
-                    </Label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={settings.enable_express_shipping === 'true'} 
-                        onChange={(e) => setSettings({...settings, enable_express_shipping: e.target.checked ? 'true' : 'false'})} 
-                        className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" 
-                      />
-                      <span className="text-sm text-gray-600">Aktif</span>
-                    </label>
-                  </div>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={settings.express_shipping_cost}
-                    onChange={(e) => setSettings({ ...settings, express_shipping_cost: e.target.value })}
-                    placeholder="49.90"
-                    disabled={settings.enable_express_shipping === 'false'}
-                    className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all duration-200 disabled:opacity-50"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    1-2 gün içinde teslimat
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <Label className="text-sm font-semibold text-gray-700">
-                      Aynı Gün Teslimat
-                    </Label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={settings.enable_same_day_shipping === 'true'} 
-                        onChange={(e) => setSettings({...settings, enable_same_day_shipping: e.target.checked ? 'true' : 'false'})} 
-                        className="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" 
-                      />
-                      <span className="text-sm text-gray-600">Aktif</span>
-                    </label>
-                  </div>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={settings.same_day_shipping_cost}
-                    onChange={(e) => setSettings({ ...settings, same_day_shipping_cost: e.target.value })}
-                    placeholder="79.90"
-                    disabled={settings.enable_same_day_shipping === 'false'}
-                    className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all duration-200 disabled:opacity-50"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Aynı gün içinde teslimat (şehir içi)
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Teslimat Ayarları */}
-          <div className="space-y-6">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-600 to-red-600 rounded-xl flex items-center justify-center">
-                  <Clock className="text-white" size={20} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Teslimat Süreleri</h2>
-                  <p className="text-gray-600 text-sm">Tahmini teslimat süreleri</p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                    Standart Teslimat (Gün)
-                  </Label>
-                  <Input
-                    value={settings.estimated_delivery_days}
-                    onChange={(e) => setSettings({ ...settings, estimated_delivery_days: e.target.value })}
-                    placeholder="2-4"
-                    className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all duration-200"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                    Hızlı Teslimat (Gün)
-                  </Label>
-                  <Input
-                    value={settings.express_delivery_days}
-                    onChange={(e) => setSettings({ ...settings, express_delivery_days: e.target.value })}
-                    placeholder="1-2"
-                    className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all duration-200"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                    Aynı Gün Teslimat (Saat)
-                  </Label>
-                  <Input
-                    value={settings.same_day_delivery_hours}
-                    onChange={(e) => setSettings({ ...settings, same_day_delivery_hours: e.target.value })}
-                    placeholder="3-6"
-                    className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all duration-200"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                    Teslimat Bölgeleri
-                  </Label>
-                  <Input
-                    value={settings.shipping_regions}
-                    onChange={(e) => setSettings({ ...settings, shipping_regions: e.target.value })}
-                    placeholder="Türkiye geneli"
-                    className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all duration-200"
-                  />
-                </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Kargo Ücretleri</h2>
+                <p className="text-gray-600 text-sm">Teslimat ücret ayarları</p>
               </div>
             </div>
 
-            {/* Kargo Hesaplama Testi */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                  <Calculator className="text-white" size={20} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Kargo Hesaplama Testi</h2>
-                  <p className="text-gray-600 text-sm">Ayarları test edin</p>
-                </div>
+            <div className="space-y-6">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Ücretsiz Kargo Limiti (₺)
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={settings.free_shipping_threshold}
+                  onChange={(e) => setSettings({ ...settings, free_shipping_threshold: e.target.value })}
+                  placeholder="500"
+                  className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Bu tutarın üzerindeki siparişlerde kargo ücretsiz olur
+                </p>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
-                    Test Tutarı (₺)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={testAmount}
-                    onChange={(e) => setTestAmount(e.target.value)}
-                    placeholder="250"
-                    className="bg-white/50 border-gray-200/50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all duration-200"
-                  />
-                </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Standart Kargo Ücreti (₺)
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={settings.shipping_cost}
+                  onChange={(e) => setSettings({ ...settings, shipping_cost: e.target.value })}
+                  placeholder="29.90"
+                  className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Ücretsiz kargo limitinin altındaki siparişler için
+                </p>
+              </div>
 
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700">Sipariş Tutarı:</span>
-                      <span className="font-bold text-gray-900">{parseFloat(testAmount).toFixed(2)} ₺</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700">Kargo Ücreti:</span>
-                      <span className={`font-bold ${testShipping.isFree ? 'text-green-600' : 'text-orange-600'}`}>
-                        {testShipping.isFree ? 'Ücretsiz' : `${testShipping.cost.toFixed(2)} ₺`}
-                      </span>
-                    </div>
-                    <div className="border-t border-blue-200 pt-2 flex justify-between items-center">
-                      <span className="font-bold text-gray-900">Toplam:</span>
-                      <span className="font-bold text-lg text-gray-900">
-                        {(parseFloat(testAmount) + testShipping.cost).toFixed(2)} ₺
-                      </span>
-                    </div>
-                    
-                    {!testShipping.isFree && (
-                      <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                        <p className="text-xs text-orange-700">
-                          💡 <strong>{settings.free_shipping_threshold} ₺</strong> ve üzeri alışverişlerde kargo ücretsiz!
-                          <br />
-                          <strong>{(parseFloat(settings.free_shipping_threshold) - parseFloat(testAmount)).toFixed(2)} ₺</strong> daha ekleyin.
-                        </p>
-                      </div>
-                    )}
-                  </div>
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Hızlı Kargo
+                  </Label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={settings.enable_express_shipping === 'true'} 
+                      onChange={(e) => setSettings({...settings, enable_express_shipping: e.target.checked ? 'true' : 'false'})} 
+                      className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500" 
+                    />
+                    <span className="text-sm text-gray-600">Aktif</span>
+                  </label>
                 </div>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={settings.express_shipping_cost}
+                  onChange={(e) => setSettings({ ...settings, express_shipping_cost: e.target.value })}
+                  placeholder="49.90"
+                  disabled={settings.enable_express_shipping === 'false'}
+                  className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  1-2 gün içinde teslimat
+                </p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Aynı Gün Teslimat
+                  </Label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={settings.enable_same_day_shipping === 'true'} 
+                      onChange={(e) => setSettings({...settings, enable_same_day_shipping: e.target.checked ? 'true' : 'false'})} 
+                      className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-500" 
+                    />
+                    <span className="text-sm text-gray-600">Aktif</span>
+                  </label>
+                </div>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={settings.same_day_shipping_cost}
+                  onChange={(e) => setSettings({ ...settings, same_day_shipping_cost: e.target.value })}
+                  placeholder="79.90"
+                  disabled={settings.enable_same_day_shipping === 'false'}
+                  className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Aynı gün içinde teslimat (şehir içi)
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bilgi Kartları */}
-        <div className="mt-8 grid md:grid-cols-3 gap-6">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-6">
+        {/* Teslimat Ayarları */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Clock className="text-gray-600" size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Teslimat Süreleri</h2>
+                <p className="text-gray-600 text-sm">Tahmini teslimat süreleri</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Standart Teslimat (Gün)
+                </Label>
+                <Input
+                  value={settings.estimated_delivery_days}
+                  onChange={(e) => setSettings({ ...settings, estimated_delivery_days: e.target.value })}
+                  placeholder="2-4"
+                  className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Hızlı Teslimat (Gün)
+                </Label>
+                <Input
+                  value={settings.express_delivery_days}
+                  onChange={(e) => setSettings({ ...settings, express_delivery_days: e.target.value })}
+                  placeholder="1-2"
+                  className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Aynı Gün Teslimat (Saat)
+                </Label>
+                <Input
+                  value={settings.same_day_delivery_hours}
+                  onChange={(e) => setSettings({ ...settings, same_day_delivery_hours: e.target.value })}
+                  placeholder="3-6"
+                  className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Teslimat Bölgeleri
+                </Label>
+                <Input
+                  value={settings.shipping_regions}
+                  onChange={(e) => setSettings({ ...settings, shipping_regions: e.target.value })}
+                  placeholder="Türkiye geneli"
+                  className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Kargo Hesaplama Testi */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Calculator className="text-gray-600" size={20} />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Kargo Hesaplama Testi</h2>
+                <p className="text-gray-600 text-sm">Ayarları test edin</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Test Tutarı (₺)
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={testAmount}
+                  onChange={(e) => setTestAmount(e.target.value)}
+                  placeholder="250"
+                  className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                />
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Sipariş Tutarı:</span>
+                    <span className="font-semibold text-gray-900">{parseFloat(testAmount).toFixed(2)} ₺</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Kargo Ücreti:</span>
+                    <span className={`font-semibold ${testShipping.isFree ? 'text-green-600' : 'text-gray-900'}`}>
+                      {testShipping.isFree ? 'Ücretsiz' : `${testShipping.cost.toFixed(2)} ₺`}
+                    </span>
+                  </div>
+                  <div className="border-t border-gray-200 pt-2 flex justify-between items-center">
+                    <span className="font-semibold text-gray-900">Toplam:</span>
+                    <span className="font-bold text-lg text-gray-900">
+                      {(parseFloat(testAmount) + testShipping.cost).toFixed(2)} ₺
+                    </span>
+                  </div>
+                  
+                  {!testShipping.isFree && (
+                    <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-xs text-blue-700">
+                        💡 <strong>{settings.free_shipping_threshold} ₺</strong> ve üzeri alışverişlerde kargo ücretsiz!
+                        <br />
+                        <strong>{(parseFloat(settings.free_shipping_threshold) - parseFloat(testAmount)).toFixed(2)} ₺</strong> daha ekleyin.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bilgi Kartları */}
+      <div className="grid md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <Package className="text-gray-600" size={16} />
+            </div>
+            <h3 className="font-semibold text-gray-900">Standart Kargo</h3>
+          </div>
+          <div className="space-y-2 text-sm text-gray-600">
+            <p>• {settings.estimated_delivery_days} gün teslimat</p>
+            <p>• {settings.shipping_cost} ₺ ücret</p>
+            <p>• {settings.free_shipping_threshold} ₺ üzeri ücretsiz</p>
+          </div>
+        </div>
+
+        {settings.enable_express_shipping === 'true' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                <Package className="text-white" size={16} />
+              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Truck className="text-gray-600" size={16} />
               </div>
-              <h3 className="font-bold text-gray-900">Standart Kargo</h3>
+              <h3 className="font-semibold text-gray-900">Hızlı Kargo</h3>
             </div>
             <div className="space-y-2 text-sm text-gray-600">
-              <p>• {settings.estimated_delivery_days} gün teslimat</p>
-              <p>• {settings.shipping_cost} ₺ ücret</p>
-              <p>• {settings.free_shipping_threshold} ₺ üzeri ücretsiz</p>
+              <p>• {settings.express_delivery_days} gün teslimat</p>
+              <p>• {settings.express_shipping_cost} ₺ ücret</p>
+              <p>• Öncelikli işlem</p>
             </div>
           </div>
+        )}
 
-          {settings.enable_express_shipping === 'true' && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                  <Truck className="text-white" size={16} />
-                </div>
-                <h3 className="font-bold text-gray-900">Hızlı Kargo</h3>
+        {settings.enable_same_day_shipping === 'true' && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                <MapPin className="text-gray-600" size={16} />
               </div>
-              <div className="space-y-2 text-sm text-gray-600">
-                <p>• {settings.express_delivery_days} gün teslimat</p>
-                <p>• {settings.express_shipping_cost} ₺ ücret</p>
-                <p>• Öncelikli işlem</p>
-              </div>
+              <h3 className="font-semibold text-gray-900">Aynı Gün</h3>
             </div>
-          )}
-
-          {settings.enable_same_day_shipping === 'true' && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
-                  <MapPin className="text-white" size={16} />
-                </div>
-                <h3 className="font-bold text-gray-900">Aynı Gün</h3>
-              </div>
-              <div className="space-y-2 text-sm text-gray-600">
-                <p>• {settings.same_day_delivery_hours} saat teslimat</p>
-                <p>• {settings.same_day_shipping_cost} ₺ ücret</p>
-                <p>• Sadece şehir içi</p>
-              </div>
+            <div className="space-y-2 text-sm text-gray-600">
+              <p>• {settings.same_day_delivery_hours} saat teslimat</p>
+              <p>• {settings.same_day_shipping_cost} ₺ ücret</p>
+              <p>• Sadece şehir içi</p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

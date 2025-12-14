@@ -90,21 +90,45 @@ export default function MultiImageUpload({
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index)
     e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/html', '')
+    e.dataTransfer.setData('text/plain', index.toString())
   }
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault()
+    e.stopPropagation()
     e.dataTransfer.dropEffect = 'move'
-    setDragOverIndex(index)
+    
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index)
+    }
   }
 
-  const handleDragLeave = () => {
-    setDragOverIndex(null)
+  const handleDragEnter = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (draggedIndex !== null && draggedIndex !== index) {
+      setDragOverIndex(index)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Only clear drag over if we're leaving the container entirely
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverIndex(null)
+    }
   }
 
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault()
+    e.stopPropagation()
     
     if (draggedIndex === null || draggedIndex === dropIndex) {
       setDraggedIndex(null)
@@ -121,7 +145,8 @@ export default function MultiImageUpload({
     setDragOverIndex(null)
   }
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e: React.DragEvent) => {
+    e.preventDefault()
     setDraggedIndex(null)
     setDragOverIndex(null)
   }
@@ -232,9 +257,10 @@ export default function MultiImageUpload({
                 draggable
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
-                onDragLeave={handleDragLeave}
+                onDragEnter={(e) => handleDragEnter(e, index)}
+                onDragLeave={(e) => handleDragLeave(e)}
                 onDrop={(e) => handleDrop(e, index)}
-                onDragEnd={handleDragEnd}
+                onDragEnd={(e) => handleDragEnd(e)}
                 className={`
                   relative group cursor-grab active:cursor-grabbing
                   transition-all duration-200

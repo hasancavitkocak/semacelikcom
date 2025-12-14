@@ -61,12 +61,15 @@ export async function GET(
 
     // Kullanıcı bilgilerini ayrı olarak çek
     let userProfile: any = {}
-    if (isAdmin) {
-      const { data: profile } = await supabase
-        .from('profiles')
+    if (data.user_id) {
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
         .select('id, full_name, email, phone')
         .eq('id', data.user_id)
         .single()
+      
+      console.log('👤 User profile for order:', data.user_id, profile)
+      console.log('❌ Profile error:', profileError)
       
       userProfile = profile || {}
     }
@@ -88,6 +91,10 @@ export async function GET(
       })
     }
 
+    // Debug address structure
+    console.log('🏠 Raw shipping_address:', JSON.stringify(data.shipping_address, null, 2))
+    console.log('🏠 Raw billing_address:', JSON.stringify(data.billing_address, null, 2))
+
     // Format data
     const formattedOrder = {
       id: data.id,
@@ -100,9 +107,9 @@ export async function GET(
       created_at: data.created_at,
       updated_at: data.updated_at,
       user_id: data.user_id,
-      user_email: userProfile?.email || data.shipping_address?.fullName || 'Bilinmiyor',
+      user_email: userProfile?.email || data.shipping_address?.email || 'Bilinmiyor',
       user_name: userProfile?.full_name || data.shipping_address?.fullName || 'Bilinmiyor',
-      user_phone: userProfile?.phone || '',
+      user_phone: userProfile?.phone || data.shipping_address?.phone || '',
       payment_status: data.status,
       payment_method: data.payment_details?.payment_method || 'Bilinmiyor',
       tracking_number: data.tracking_number,
@@ -111,8 +118,13 @@ export async function GET(
       notes: data.notes,
       order_items: data.items?.map((item: any) => ({
         id: item.id,
+        product_id: item.product_id,
+        product_name: item.product?.name || 'Bilinmiyor',
+        product_slug: productSlugs[item.product_id] || item.product?.slug,
+        variant_name: item.variant ? `${item.variant.color} - ${item.variant.size}` : null,
         quantity: item.quantity,
         price: item.product?.price || 0,
+        total: (item.product?.price || 0) * item.quantity,
         product: {
           id: item.product_id,
           name: item.product?.name,

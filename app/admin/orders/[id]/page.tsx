@@ -1,248 +1,453 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Package, User, MapPin, CreditCard, Truck, Calendar, Edit, Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { supabase } from '@/lib/supabase'
-import type { Order, OrderItem } from '@/types/database'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import AdminHeader from '@/components/admin-header'
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
-  const [order, setOrder] = useState<Order | null>(null)
-  const [items, setItems] = useState<OrderItem[]>([])
+interface OrderItem {
+  id: string
+  product_id: string
+  product_name: string
+  product_slug?: string
+  variant_name?: string
+  quantity: number
+  price: number
+  total: number
+  product?: {
+    name: string
+    slug?: string
+    images?: Array<{ image_url: string; is_primary: boolean }>
+  }
+}
+
+interface OrderDetail {
+  id: string
+  order_number: string
+  status: string
+  total: number
+  subtotal: number
+  shipping_cost: number
+  created_at: string
+  updated_at: string
+  user_id: string
+  user_email: string
+  user_name: string
+  payment_status: string
+  payment_method: string
+  tracking_number?: string
+  shipping_address: any // Allow flexible address structure
+  billing_address?: any // Allow flexible address structure
+  notes?: string
+  order_items: OrderItem[]
+}
+
+// Helper function to safely get address field with multiple possible names
+const getAddressField = (address: any, fieldNames: string[]): string => {
+  if (!address) return 'Bilinmiyor'
+  
+  for (const fieldName of fieldNames) {
+    if (address[fieldName] && typeof address[fieldName] === 'string') {
+      return address[fieldName]
+    }
+  }
+  return 'Bilinmiyor'
+}
+
+export default function AdminOrderDetailPage() {
+  const params = useParams()
+  const router = useRouter()
+  const orderId = params.id as string
+  
+  const [order, setOrder] = useState<OrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
-  const orderId = params.id
+  const [editingStatus, setEditingStatus] = useState(false)
+  const [newStatus, setNewStatus] = useState('')
+  const [trackingNumber, setTrackingNumber] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     loadOrder()
-  }, [])
+  }, [orderId])
 
   const loadOrder = async () => {
     try {
-      // Sipariş bilgisi
-      const { data: orderData, error: orderError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          user:users(email, full_name, phone)
-        `)
-        .eq('id', orderId)
-        .single()
+      const response = await fetch(`/api/orders/${orderId}?admin=true`)
+      const result = await response.json()
 
-      if (orderError) throw orderError
+      if (!result.success) {
+        throw new Error(result.message || 'Sipariş yüklenemedi')
+      }
 
-      // Sipariş kalemleri
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('order_items')
-        .select(`
-          *,
-          product:products(name, description),
-          variant:product_variants(
-            *,
-            color:colors(name),
-            size:sizes(name)
-          )
-        `)
-        .eq('order_id', orderId)
+      console.log('📦 Order data:', result.data)
+      console.log('🏠 Shipping address structure:', result.data.shipping_address)
+      console.log('🏠 Billing address structure:', result.data.billing_address)
 
-      if (itemsError) throw itemsError
-
-      setOrder(orderData)
-      setItems(itemsData || [])
+      setOrder(result.data)
+      setNewStatus(result.data.status)
+      setTrackingNumber(result.data.tracking_number || '')
     } catch (error) {
       console.error('Load order error:', error)
-      alert('Sipariş yüklenirken hata oluştu!')
+      alert('Sipariş yüklenirken hata oluştu')
+      router.push('/admin/orders')
     } finally {
       setLoading(false)
     }
   }
 
-  const updateStatus = async (newStatus: string) => {
+  const updateOrderStatus = async () => {
+    if (!order) return
+    
+    setSaving(true)
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: newStatus })
-        .eq('id', orderId)
+      const response = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: order.id,
+          status: newStatus,
+          tracking_number: trackingNumber.trim() || null
+        })
+      })
 
-      if (error) throw error
-      alert('Sipariş durumu güncellendi!')
-      loadOrder()
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.message || 'Sipariş güncellenemedi')
+      }
+
+      // Refresh order
+      await loadOrder()
+      setEditingStatus(false)
+      alert('Sipariş durumu güncellendi')
     } catch (error: any) {
-      console.error('Update error:', error)
+      console.error('Update order error:', error)
       alert('Hata: ' + error.message)
+    } finally {
+      setSaving(false)
     }
   }
 
-  const statusText: Record<string, string> = {
-    pending: 'Beklemede',
-    processing: 'Hazırlanıyor',
-    shipped: 'Kargoda',
-    delivered: 'Teslim Edildi',
-    cancelled: 'İptal'
-  }
-
-  const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    processing: 'bg-blue-100 text-blue-800',
-    shipped: 'bg-purple-100 text-purple-800',
-    delivered: 'bg-green-100 text-green-800',
-    cancelled: 'bg-red-100 text-red-800'
+  const getStatusInfo = (status: string) => {
+    const statusMap: Record<string, { text: string; color: string; bgColor: string }> = {
+      created: { text: 'Oluşturuldu', color: 'text-blue-800', bgColor: 'bg-blue-100' },
+      processing: { text: 'Hazırlanıyor', color: 'text-orange-800', bgColor: 'bg-orange-100' },
+      shipped: { text: 'Kargoda', color: 'text-purple-800', bgColor: 'bg-purple-100' },
+      delivered: { text: 'Teslim Edildi', color: 'text-green-800', bgColor: 'bg-green-100' },
+      cancelled: { text: 'İptal Edildi', color: 'text-red-800', bgColor: 'bg-red-100' },
+      returned: { text: 'İade Edildi', color: 'text-gray-800', bgColor: 'bg-gray-100' }
+    }
+    return statusMap[status] || { text: status, color: 'text-gray-800', bgColor: 'bg-gray-100' }
   }
 
   if (loading) {
-    return <div className="p-8">Yükleniyor...</div>
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-gray-900"></div>
+            <span className="ml-3 text-gray-600">Sipariş yükleniyor...</span>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (!order) {
-    return <div className="p-8">Sipariş bulunamadı!</div>
+    return (
+      <div className="space-y-6">
+        <AdminHeader
+          title="Sipariş Bulunamadı"
+          description="Aradığınız sipariş bulunamadı"
+          backUrl="/admin/orders"
+          backLabel="Siparişler"
+        />
+      </div>
+    )
   }
 
-  return (
-    <div>
-      <div className="mb-8">
-        <Link href="/admin/orders" className="text-blue-600 hover:underline">
-          ← Siparişlere Dön
-        </Link>
-        <h1 className="text-4xl font-bold mt-4">Sipariş Detayı</h1>
-      </div>
+  const statusInfo = getStatusInfo(order.status)
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sipariş Bilgileri</CardTitle>
-            </CardHeader>
-            <CardContent>
+  return (
+    <div className="space-y-6">
+      <AdminHeader
+        title={`Sipariş ${order.order_number}`}
+        description={`${order.user_name} - ${new Date(order.created_at).toLocaleDateString('tr-TR')}`}
+        backUrl="/admin/orders"
+        backLabel="Siparişler"
+        actions={
+          <div className="flex items-center gap-3">
+            {editingStatus ? (
+              <>
+                <Button
+                  onClick={() => setEditingStatus(false)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <X size={16} className="mr-2" />
+                  İptal
+                </Button>
+                <Button
+                  onClick={updateOrderStatus}
+                  disabled={saving}
+                  size="sm"
+                  className="bg-gray-900 hover:bg-black text-white"
+                >
+                  <Save size={16} className="mr-2" />
+                  {saving ? 'Kaydediliyor...' : 'Kaydet'}
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={() => setEditingStatus(true)}
+                variant="outline"
+                size="sm"
+              >
+                <Edit size={16} className="mr-2" />
+                Durumu Güncelle
+              </Button>
+            )}
+          </div>
+        }
+      />
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Sol Kolon - Sipariş Bilgileri */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Sipariş Durumu */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Sipariş Durumu</h3>
+            
+            {editingStatus ? (
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Durum</Label>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  >
+                    <option value="created">Oluşturuldu</option>
+                    <option value="processing">Hazırlanıyor</option>
+                    <option value="shipped">Kargoda</option>
+                    <option value="delivered">Teslim Edildi</option>
+                    <option value="cancelled">İptal Edildi</option>
+                    <option value="returned">İade Edildi</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Kargo Takip No</Label>
+                  <Input
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    placeholder="Kargo takip numarası"
+                    className="border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            ) : (
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Sipariş No:</span>
-                  <span className="font-semibold">#{order.id.slice(0, 8)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Tarih:</span>
-                  <span>{new Date(order.created_at).toLocaleString('tr-TR')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Durum:</span>
-                  <span className={`px-3 py-1 rounded text-sm ${statusColors[order.status]}`}>
-                    {statusText[order.status]}
+                <div className="flex items-center gap-3">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
+                    {statusInfo.text}
+                  </span>
+                  <span className={`text-sm ${order.payment_status === 'paid' ? 'text-green-600' : 'text-orange-600'}`}>
+                    {order.payment_status === 'paid' ? '✓ Ödendi' : '⏳ Ödeme Bekliyor'}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Toplam:</span>
-                  <span className="font-bold text-lg">{order.total} ₺</span>
+                
+                {order.tracking_number && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Truck size={16} />
+                    <span>Kargo Takip: <strong>{order.tracking_number}</strong></span>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Calendar size={16} />
+                  <span>Oluşturulma: {new Date(order.created_at).toLocaleString('tr-TR')}</span>
                 </div>
+                
+                {order.updated_at !== order.created_at && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Calendar size={16} />
+                    <span>Güncelleme: {new Date(order.updated_at).toLocaleString('tr-TR')}</span>
+                  </div>
+                )}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Sipariş Kalemleri</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {items.map((item) => (
-                  <div key={item.id} className="flex gap-4 border-b pb-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{item.product?.name}</h3>
-                      {item.variant && (
-                        <p className="text-sm text-gray-600">
-                          {item.variant.color?.name} / {item.variant.size?.name}
-                        </p>
-                      )}
-                      <p className="text-sm text-gray-600">Adet: {item.quantity}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">{item.price} ₺</p>
-                      <p className="text-sm text-gray-600">
-                        Toplam: {(item.price * item.quantity).toFixed(2)} ₺
-                      </p>
+          {/* Sipariş Ürünleri */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Sipariş Ürünleri</h3>
+            
+            <div className="space-y-4">
+              {order.order_items.map((item) => (
+                <div key={item.id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
+                  <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                    {item.product?.images?.[0] ? (
+                      <img 
+                        src={item.product.images.find(img => img.is_primary)?.image_url || item.product.images[0].image_url} 
+                        alt={item.product_name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package size={20} className="text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{item.product_name}</h4>
+                    {item.variant_name && (
+                      <p className="text-sm text-gray-600">{item.variant_name}</p>
+                    )}
+                    <div className="flex items-center gap-4 mt-1">
+                      <span className="text-sm text-gray-600">Adet: {item.quantity || 0}</span>
+                      <span className="text-sm text-gray-600">Birim: {(item.price || 0).toFixed(2)} ₺</span>
                     </div>
                   </div>
-                ))}
+                  
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">{(item.total || (item.price * item.quantity) || 0).toFixed(2)} ₺</p>
+                    {(item.product?.slug || item.product_slug) && (
+                      <Link 
+                        href={`/products/${item.product?.slug || item.product_slug}`}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                        target="_blank"
+                      >
+                        Ürünü Görüntüle →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Toplam */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Ara Toplam:</span>
+                  <span className="text-gray-900">{(order.subtotal || 0).toFixed(2)} ₺</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Kargo:</span>
+                  <span className="text-gray-900">{(order.shipping_cost || 0).toFixed(2)} ₺</span>
+                </div>
+                <div className="flex justify-between text-lg font-semibold pt-2 border-t border-gray-200">
+                  <span className="text-gray-900">Toplam:</span>
+                  <span className="text-gray-900">{(order.total || 0).toFixed(2)} ₺</span>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
+        {/* Sağ Kolon - Müşteri ve Adres Bilgileri */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Müşteri Bilgileri</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm text-gray-600">Ad Soyad</p>
-                  <p className="font-semibold">{order.user?.full_name || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">E-posta</p>
-                  <p className="font-semibold">{order.user?.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Telefon</p>
-                  <p className="font-semibold">{order.user?.phone || '-'}</p>
+          {/* Müşteri Bilgileri */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <User size={20} className="text-gray-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Müşteri Bilgileri</h3>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <p className="font-medium text-gray-900">{order.user_name}</p>
+                <p className="text-sm text-gray-600">{order.user_email}</p>
+              </div>
+              
+              <div className="pt-3 border-t border-gray-200">
+                <div className="flex items-center gap-2 text-sm">
+                  <CreditCard size={16} className="text-gray-400" />
+                  <span className="text-gray-600">Ödeme: {order.payment_method}</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Teslimat Adresi</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <p>{order.shipping_address || 'Adres bilgisi yok'}</p>
-                {order.shipping_city && <p>{order.shipping_city}</p>}
-                {order.shipping_zip && <p>{order.shipping_zip}</p>}
+          {/* Teslimat Adresi */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <MapPin size={20} className="text-gray-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Teslimat Adresi</h3>
+            </div>
+            
+            <div className="space-y-2 text-sm">
+              <p className="font-medium text-gray-900">
+                {getAddressField(order.shipping_address, ['fullName', 'full_name', 'name'])}
+              </p>
+              <p className="text-gray-600">
+                {getAddressField(order.shipping_address, ['phone', 'phoneNumber', 'phone_number'])}
+              </p>
+              <p className="text-gray-600">
+                {getAddressField(order.shipping_address, ['email', 'emailAddress', 'email_address'])}
+              </p>
+              <div className="pt-2 border-t border-gray-200">
+                <p className="text-gray-900">
+                  {getAddressField(order.shipping_address, ['address', 'address_line', 'addressLine', 'street', 'street_address'])}
+                </p>
+                <p className="text-gray-600">
+                  {getAddressField(order.shipping_address, ['district', 'state', 'county'])}, {getAddressField(order.shipping_address, ['city', 'town'])}
+                </p>
+                <p className="text-gray-600">
+                  {getAddressField(order.shipping_address, ['postalCode', 'postal_code', 'zipCode', 'zip_code', 'zip'])}
+                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Durum Güncelle</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  onClick={() => updateStatus('processing')}
-                  disabled={order.status === 'processing'}
-                >
-                  Hazırlanıyor
-                </Button>
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  onClick={() => updateStatus('shipped')}
-                  disabled={order.status === 'shipped'}
-                >
-                  Kargoya Verildi
-                </Button>
-                <Button 
-                  className="w-full" 
-                  variant="outline"
-                  onClick={() => updateStatus('delivered')}
-                  disabled={order.status === 'delivered'}
-                >
-                  Teslim Edildi
-                </Button>
-                <Button 
-                  className="w-full" 
-                  variant="destructive"
-                  onClick={() => updateStatus('cancelled')}
-                  disabled={order.status === 'cancelled'}
-                >
-                  İptal Et
-                </Button>
+          {/* Fatura Adresi */}
+          {order.billing_address && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <CreditCard size={20} className="text-gray-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Fatura Adresi</h3>
               </div>
-            </CardContent>
-          </Card>
+              
+              <div className="space-y-2 text-sm">
+                <p className="font-medium text-gray-900">
+                  {getAddressField(order.billing_address, ['fullName', 'full_name', 'name'])}
+                </p>
+                <p className="text-gray-600">
+                  {getAddressField(order.billing_address, ['phone', 'phoneNumber', 'phone_number'])}
+                </p>
+                <p className="text-gray-600">
+                  {getAddressField(order.billing_address, ['email', 'emailAddress', 'email_address'])}
+                </p>
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="text-gray-900">
+                    {getAddressField(order.billing_address, ['address', 'address_line', 'addressLine', 'street', 'street_address'])}
+                  </p>
+                  <p className="text-gray-600">
+                    {getAddressField(order.billing_address, ['district', 'state', 'county'])}, {getAddressField(order.billing_address, ['city', 'town'])}
+                  </p>
+                  <p className="text-gray-600">
+                    {getAddressField(order.billing_address, ['postalCode', 'postal_code', 'zipCode', 'zip_code', 'zip'])}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Notlar */}
+          {order.notes && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Sipariş Notları</h3>
+              <p className="text-sm text-gray-600 whitespace-pre-wrap">{order.notes}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

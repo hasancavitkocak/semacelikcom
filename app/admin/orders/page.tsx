@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Package, Truck, CheckCircle, Clock, XCircle, Eye, Edit, Search } from 'lucide-react'
+import Link from 'next/link'
 import AdminHeader from '@/components/admin-header'
 
 interface Order {
@@ -305,6 +306,13 @@ export default function AdminOrdersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
+                          <Link
+                            href={`/admin/orders/${order.id}`}
+                            className="text-gray-600 hover:text-gray-900 p-1"
+                            title="Detayları Görüntüle"
+                          >
+                            <Eye size={16} />
+                          </Link>
                           <button
                             onClick={() => {
                               setSelectedOrder(order)

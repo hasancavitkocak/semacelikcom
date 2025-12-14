@@ -28,10 +28,17 @@ export default function AdminDashboard() {
         .from('orders')
         .select('total_amount')
 
-      // Son 3 sipariş
+      // Son 3 sipariş - users tablosu ile join
       const { data: recentOrdersData, error: ordersError } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          users (
+            id,
+            email,
+            full_name
+          )
+        `)
         .order('created_at', { ascending: false })
         .limit(3)
 
@@ -76,8 +83,8 @@ export default function AdminDashboard() {
         total_amount: order.total_amount,
         order_status: order.order_status || (order.status === 'paid' ? 'created' : order.status),
         created_at: order.created_at,
-        user_name: order.shipping_address?.fullName || 'Bilinmiyor',
-        user_email: order.shipping_address?.email || 'Bilinmiyor'
+        user_name: order.users?.full_name || order.shipping_address?.fullName || 'Bilinmiyor',
+        user_email: order.users?.email || order.shipping_address?.email || 'Bilinmiyor'
       })) || []
 
       setRecentOrders(formattedOrders)

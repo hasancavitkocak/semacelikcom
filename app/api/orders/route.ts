@@ -52,15 +52,19 @@ export async function GET(request: Request) {
     // Kullanıcı bilgilerini ayrı olarak çek (admin için)
     let userProfiles: any = {}
     if (isAdmin && data && data.length > 0) {
-      const userIds = [...new Set(data.map(order => order.user_id))]
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', userIds)
+      // user_id alanını kullan
+      const userIds = [...new Set(data.map(order => order.user_id).filter(Boolean))]
       
-      profiles?.forEach(profile => {
-        userProfiles[profile.id] = profile
-      })
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('users')
+          .select('id, full_name, email')
+          .in('id', userIds)
+        
+        profiles?.forEach(profile => {
+          userProfiles[profile.id] = profile
+        })
+      }
     }
 
     // Get all unique product IDs to fetch slugs
@@ -94,7 +98,7 @@ export async function GET(request: Request) {
       created_at: order.created_at,
       updated_at: order.updated_at,
       user_id: order.user_id,
-      user_email: userProfiles[order.user_id]?.email || order.shipping_address?.fullName || 'Bilinmiyor',
+      user_email: userProfiles[order.user_id]?.email || order.shipping_address?.email || 'Bilinmiyor',
       user_name: userProfiles[order.user_id]?.full_name || order.shipping_address?.fullName || 'Bilinmiyor',
       payment_status: order.status, // Use actual status for payment
       payment_method: order.payment_details?.payment_method || 'Bilinmiyor',

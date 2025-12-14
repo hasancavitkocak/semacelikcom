@@ -237,12 +237,12 @@ export default function OrdersPage() {
                       const orderNumber = order.order_number || `#${order.id.slice(0, 8).toUpperCase()}`
                       
                       return (
-                        <div key={order.id} className={`p-4 sm:p-6 hover:bg-gray-50 transition ${index > 0 ? 'border-t border-gray-200' : ''}`}>
+                        <div key={order.id} className={`p-4 sm:p-6 hover:bg-gray-50 transition min-w-0 ${index > 0 ? 'border-t border-gray-200' : ''}`}>
                           {/* Order Header */}
                           <div className="flex flex-col gap-4 mb-4">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                               <div className="flex-1">
-                                <h3 className="text-lg font-bold text-black mb-1">Sipariş No: {orderNumber}</h3>
+                                <h3 className="text-lg font-bold text-black mb-1 break-all">Sipariş No: {orderNumber}</h3>
                                 <div className="text-sm text-gray-600">
                                   {new Date(order.created_at).toLocaleDateString('tr-TR', {
                                     day: '2-digit',
@@ -277,7 +277,7 @@ export default function OrdersPage() {
                               </span>
                             </div>
                             
-                            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
                               {order.order_items?.slice(0, 6).map((item, index) => {
                                 const primaryImage = item.product?.images?.find((img: any) => img.is_primary) || item.product?.images?.[0]
                                 
@@ -301,7 +301,7 @@ export default function OrdersPage() {
                                       )}
                                     </div>
                                     <div className="mt-1 text-xs text-center">
-                                      <p className="font-medium text-gray-900 truncate group-hover:text-gray-600 transition text-xs">
+                                      <p className="font-medium text-gray-900 group-hover:text-gray-600 transition text-xs line-clamp-2 leading-tight">
                                         {item.product?.name || 'Ürün'}
                                       </p>
                                       <p className="text-gray-500 text-xs">

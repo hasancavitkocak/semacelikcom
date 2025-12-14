@@ -250,25 +250,32 @@ export default function OrderDetailPage() {
 
               {/* Order Header */}
               <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
+                <div className="flex flex-col gap-4 mb-6">
                   <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-black mb-2">Sipariş No: {orderNumber}</h2>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-gray-600">
-                      <span>
-                        Sipariş Tarihi: {new Date(order.created_at).toLocaleDateString('tr-TR', {
+                    <h2 className="text-xl sm:text-2xl font-bold text-black mb-3 break-all">Sipariş No: {orderNumber}</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-600">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-800">Sipariş Tarihi:</span>
+                        <span>{new Date(order.created_at).toLocaleDateString('tr-TR', {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
-                        })}
-                      </span>
-                      <span>Ürün Adedi: {order.order_items?.length || 0}</span>
-                      <span>Toplam Tutar: {order.total?.toFixed(2) || '0.00'} TL</span>
+                        })}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-800">Ürün Adedi:</span>
+                        <span>{order.order_items?.length || 0} adet</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-800">Toplam Tutar:</span>
+                        <span className="font-bold text-lg text-black">{order.total?.toFixed(2) || '0.00'} TL</span>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className={`inline-flex items-center gap-2 px-4 py-3 rounded-lg border ${statusInfo.bgColor}`}>
+                  <div className={`inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border ${statusInfo.bgColor} w-full sm:w-auto`}>
                     <StatusIcon size={20} className={statusInfo.color} />
                     <span className={`font-medium ${statusInfo.color}`}>
                       {statusInfo.text}
@@ -279,12 +286,12 @@ export default function OrderDetailPage() {
                 {/* Progress Bar */}
                 <div className="mb-6">
                   <div className="relative">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between px-2">
                       {[
-                        { key: 'created', label: 'Sipariş Alındı', icon: Clock },
-                        { key: 'processing', label: 'Hazırlanıyor', icon: Package },
-                        { key: 'shipped', label: 'Kargoya Verildi', icon: Truck },
-                        { key: 'delivered', label: 'Teslim Edildi', icon: CheckCircle }
+                        { key: 'created', label: 'Sipariş Alındı', shortLabel: 'Alındı', icon: Clock },
+                        { key: 'processing', label: 'Hazırlanıyor', shortLabel: 'Hazırlanıyor', icon: Package },
+                        { key: 'shipped', label: 'Kargoya Verildi', shortLabel: 'Kargoda', icon: Truck },
+                        { key: 'delivered', label: 'Teslim Edildi', shortLabel: 'Teslim', icon: CheckCircle }
                       ].map((step, index) => {
                         const StepIcon = step.icon
                         const isActive = order.status === step.key
@@ -292,8 +299,8 @@ export default function OrderDetailPage() {
                         const isCancelled = order.status === 'cancelled'
                         
                         return (
-                          <div key={step.key} className="flex flex-col items-center relative z-10">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+                          <div key={step.key} className="flex flex-col items-center relative z-10 flex-1">
+                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-2 ${
                               isCancelled 
                                 ? 'bg-red-100 text-red-600' 
                                 : isActive 
@@ -302,9 +309,9 @@ export default function OrderDetailPage() {
                                     ? 'bg-green-100 text-green-600' 
                                     : 'bg-gray-100 text-gray-400'
                             }`}>
-                              <StepIcon size={16} />
+                              <StepIcon size={14} className="sm:w-4 sm:h-4" />
                             </div>
-                            <span className={`text-xs text-center font-medium max-w-20 ${
+                            <span className={`text-xs text-center font-medium leading-tight ${
                               isCancelled 
                                 ? 'text-red-600' 
                                 : isActive 
@@ -313,7 +320,8 @@ export default function OrderDetailPage() {
                                     ? 'text-green-600' 
                                     : 'text-gray-400'
                             }`}>
-                              {step.label}
+                              <span className="hidden sm:inline">{step.label}</span>
+                              <span className="sm:hidden">{step.shortLabel}</span>
                             </span>
                           </div>
                         )
@@ -368,17 +376,17 @@ export default function OrderDetailPage() {
               </div>
 
               {/* Order Items */}
-              <div className="bg-white rounded-lg p-6 shadow-sm">
-                <h3 className="text-xl font-bold mb-6">Alınan Ürün: {order.order_items?.length || 0} adet</h3>
+              <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+                <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Alınan Ürün: {order.order_items?.length || 0} adet</h3>
                 
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {order.order_items?.map((item) => {
                     const primaryImage = item.product?.images?.find((img: any) => img.is_primary) || item.product?.images?.[0]
                     
                     return (
-                      <div key={item.id} className="flex items-start gap-4 p-4 border border-gray-200 rounded-lg hover:border-gray-900 transition">
+                      <div key={item.id} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 border border-gray-200 rounded-lg hover:border-gray-900 transition min-w-0">
                         <Link href={`/products/${item.product?.slug || item.product_id}`} className="flex-shrink-0 group">
-                          <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-lg overflow-hidden">
                             {primaryImage ? (
                               <img 
                                 src={primaryImage.image_url} 
@@ -387,7 +395,7 @@ export default function OrderDetailPage() {
                               />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                <Package size={24} className="text-gray-400" />
+                                <Package size={20} className="sm:w-6 sm:h-6 text-gray-400" />
                               </div>
                             )}
                           </div>
@@ -398,17 +406,17 @@ export default function OrderDetailPage() {
                             href={`/products/${item.product?.slug || item.product_id}`}
                             className="block group"
                           >
-                            <h4 className="font-semibold text-black group-hover:text-gray-600 transition truncate">
+                            <h4 className="font-semibold text-sm sm:text-base text-black group-hover:text-gray-600 transition line-clamp-2">
                               {item.product?.name || 'Ürün'}
                             </h4>
                           </Link>
                           
                           <div className="mt-2 space-y-1">
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-600">
                               <span>Renk: <strong>{item.variant?.color?.name || 'Belirtilmemiş'}</strong></span>
                               <span>Beden: <strong>{item.variant?.size?.name || 'Belirtilmemiş'}</strong></span>
                             </div>
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-gray-600">
                               <span>Adet: <strong>{item.quantity}</strong></span>
                               <span>Birim Fiyat: <strong>{item.price?.toFixed(2)} TL</strong></span>
                             </div>
@@ -416,7 +424,7 @@ export default function OrderDetailPage() {
                         </div>
                         
                         <div className="text-right flex-shrink-0">
-                          <p className="text-lg font-bold text-black whitespace-nowrap">
+                          <p className="text-base sm:text-lg font-bold text-black whitespace-nowrap">
                             {(item.price * item.quantity).toFixed(2)} TL
                           </p>
                           {order.status === 'cancelled' && (
@@ -485,18 +493,18 @@ export default function OrderDetailPage() {
 
               {/* Addresses */}
               {(order.shipping_address || order.billing_address) && (
-                <div className="bg-white rounded-lg p-6 shadow-sm">
-                  <h3 className="text-xl font-bold mb-4">Adres Bilgileri</h3>
+                <div className="bg-white rounded-lg p-4 sm:p-6 shadow-sm">
+                  <h3 className="text-lg sm:text-xl font-bold mb-4">Adres Bilgileri</h3>
                   
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     {order.shipping_address && (
-                      <div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="flex items-center gap-2 mb-3">
                           <MapPin size={16} className="text-gray-600" />
-                          <h4 className="font-semibold">Teslimat Adresi</h4>
+                          <h4 className="font-semibold text-sm sm:text-base">Teslimat Adresi</h4>
                         </div>
-                        <div className="text-gray-600 text-sm space-y-1">
-                          <p>{order.shipping_address.full_name}</p>
+                        <div className="text-gray-600 text-xs sm:text-sm space-y-1">
+                          <p className="font-medium text-gray-800">{order.shipping_address.full_name}</p>
                           <p>{order.shipping_address.phone}</p>
                           <p>{order.shipping_address.address_line}</p>
                           <p>{order.shipping_address.district} / {order.shipping_address.city}</p>
@@ -508,13 +516,13 @@ export default function OrderDetailPage() {
                     )}
 
                     {order.billing_address && (
-                      <div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="flex items-center gap-2 mb-3">
                           <CreditCard size={16} className="text-gray-600" />
-                          <h4 className="font-semibold">Fatura Adresi</h4>
+                          <h4 className="font-semibold text-sm sm:text-base">Fatura Adresi</h4>
                         </div>
-                        <div className="text-gray-600 text-sm space-y-1">
-                          <p>{order.billing_address.full_name}</p>
+                        <div className="text-gray-600 text-xs sm:text-sm space-y-1">
+                          <p className="font-medium text-gray-800">{order.billing_address.full_name}</p>
                           <p>{order.billing_address.phone}</p>
                           <p>{order.billing_address.address_line}</p>
                           <p>{order.billing_address.district} / {order.billing_address.city}</p>

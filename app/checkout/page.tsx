@@ -37,7 +37,7 @@ interface District {
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cartItems } = useCart()
+  const { cartItems, clearCart } = useCart()
   const [currentStep, setCurrentStep] = useState(1)
   const [savedAddresses, setSavedAddresses] = useState<Address[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
@@ -243,7 +243,7 @@ export default function CheckoutPage() {
     setCurrentStep(prev => Math.max(prev - 1, 1))
   }
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     setError('')
     
     if (!termsAccepted) {
@@ -251,10 +251,80 @@ export default function CheckoutPage() {
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
-    
-    // İyzico entegrasyonu burada yapılacak
-    alert('İyzico ödeme sayfasına yönlendiriliyorsunuz...')
-    // İyzico API çağrısı yapılacak
+
+    if (!user) {
+      setError('Lütfen giriş yapın')
+      return
+    }
+
+    // Sepet kontrolü kaldırıldı - sipariş oluşturma sırasında sepet temizlenebilir
+
+    try {
+      // Sipariş oluştur
+      const shippingCost = shippingCalculation ? shippingCalculation.shippingCost : 0
+      const orderData = {
+        user_id: user.id,
+        conversation_id: `ORD-${Date.now()}`,
+        total_amount: shippingCalculation ? shippingCalculation.total : subtotal,
+        shipping_cost: shippingCost,
+        status: 'paid', // Test için direkt paid yapıyoruz
+        shipping_address: selectedAddressId ? 
+          savedAddresses.find(addr => addr.id === selectedAddressId) || formData :
+          formData,
+        billing_address: sameAsShipping ? 
+          (selectedAddressId ? savedAddresses.find(addr => addr.id === selectedAddressId) || formData : formData) :
+          billingData,
+        items: cartItems.map(item => ({
+          id: `${item.id}-${Date.now()}`,
+          product_id: item.product_id,
+          variant_id: item.variant_id,
+          quantity: item.quantity,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+          product: {
+            name: item.product.name,
+            price: item.product.price,
+            slug: (item.product as any).slug || item.product_id, // Use actual slug if available
+            images: item.product.images
+          },
+          variant: {
+            color: { name: item.variant?.color?.name || 'Belirtilmemiş' },
+            size: { name: item.variant?.size?.name || 'Belirtilmemiş' }
+          }
+        })),
+        payment_token: `test_token_${Date.now()}`,
+        payment_id: `test_payment_${Date.now()}`,
+        paid_at: new Date().toISOString(),
+        payment_details: {
+          test: true,
+          card_last_four: '1234',
+          payment_method: 'test_card'
+        }
+      }
+
+      // Supabase'e sipariş kaydet
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([orderData])
+        .select()
+        .single()
+
+      if (error) {
+        throw error
+      }
+
+      // Order confirmation sayfasına yönlendir (sepet arka planda temizlenecek)
+      router.push(`/order-confirmation/${data.id}`)
+      
+      // Sepeti arka planda sessizce temizle
+      setTimeout(() => {
+        clearCart(true)
+      }, 1000)
+      
+    } catch (error: any) {
+      console.error('Payment error:', error)
+      setError('Ödeme işlemi sırasında bir hata oluştu: ' + error.message)
+    }
   }
 
   return (
@@ -888,22 +958,22 @@ export default function CheckoutPage() {
                   {cartItems.map(item => {
                     const price = item.product?.price || 0
                     return (
-                      <div key={item.id} className="flex justify-between gap-2">
-                        <span className="text-gray-600 line-clamp-1">{item.product?.name} x{item.quantity}</span>
-                        <span className="font-semibold whitespace-nowrap">{(price * item.quantity).toFixed(2)} ₺</span>
+                      <div key={item.id} className="flex justify-between gap-2 items-start">
+                        <span className="text-gray-600 line-clamp-1 flex-1 min-w-0">{item.product?.name} x{item.quantity}</span>
+                        <span className="font-semibold whitespace-nowrap flex-shrink-0 text-right">{(price * item.quantity).toFixed(2)} ₺</span>
                       </div>
                     )
                   })}
-                  <div className="border-t pt-2 md:pt-3 flex justify-between">
-                    <span>Ara Toplam</span>
-                    <span>{subtotal.toFixed(2)} ₺</span>
+                  <div className="border-t pt-2 md:pt-3 flex justify-between items-center">
+                    <span className="flex-1">Ara Toplam</span>
+                    <span className="whitespace-nowrap flex-shrink-0 text-right">{subtotal.toFixed(2)} ₺</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Kargo</span>
+                  <div className="flex justify-between items-center">
+                    <span className="flex-1">Kargo</span>
                     {shippingLoading ? (
-                      <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+                      <div className="h-4 bg-gray-200 rounded w-16 animate-pulse flex-shrink-0"></div>
                     ) : (
-                      <span className={`font-semibold ${shippingCalculation?.isFreeShipping ? 'text-green-600' : 'text-orange-600'}`}>
+                      <span className={`font-semibold whitespace-nowrap flex-shrink-0 text-right ${shippingCalculation?.isFreeShipping ? 'text-green-600' : 'text-orange-600'}`}>
                         {shippingCalculation?.isFreeShipping ? 'Ücretsiz' : `${shippingCalculation?.shippingCost.toFixed(2)} ₺`}
                       </span>
                     )}
@@ -913,9 +983,9 @@ export default function CheckoutPage() {
                       💡 <strong>{freeShippingRemaining.toFixed(2)} ₺</strong> daha ekleyin, kargo ücretsiz olsun!
                     </div>
                   )}
-                  <div className="border-t pt-2 md:pt-3 flex justify-between font-bold text-base md:text-lg">
-                    <span>Toplam</span>
-                    <span>{total.toFixed(2)} ₺</span>
+                  <div className="border-t pt-2 md:pt-3 flex justify-between items-center font-bold text-base md:text-lg">
+                    <span className="flex-1">Toplam</span>
+                    <span className="whitespace-nowrap flex-shrink-0 text-right">{total.toFixed(2)} ₺</span>
                   </div>
                 </div>
               </div>

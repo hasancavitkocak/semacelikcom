@@ -28,6 +28,7 @@ interface CartContextType {
   removeFromCart: (itemId: string) => Promise<void>
   updateQuantity: (itemId: string, quantity: number) => Promise<void>
   refreshCart: () => Promise<void>
+  clearCart: (silent?: boolean) => Promise<void>
   showToast: (message: string, type: 'success' | 'error') => void
 }
 
@@ -223,6 +224,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
     await loadCart()
   }
 
+  const clearCart = async (silent = false) => {
+    try {
+      if (!user) return
+
+      // Optimistic update
+      setCartItems([])
+
+      const { error } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', user.id)
+
+      if (error) {
+        // Hata olursa geri yükle
+        await loadCart()
+        throw error
+      }
+      if (!silent) {
+        showToast('Sepet temizlendi', 'success')
+      }
+    } catch (error: any) {
+      if (!silent) {
+        showToast('Hata oluştu', 'error')
+      }
+      throw error
+    }
+  }
+
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
@@ -239,6 +268,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeFromCart,
       updateQuantity,
       refreshCart,
+      clearCart,
       showToast
     }}>
       {children}

@@ -80,8 +80,8 @@ export default function Footer() {
             <ul className="space-y-2 text-sm md:text-base">
               <li><Link href="/" className="hover:underline">Anasayfa</Link></li>
               <li><Link href="/about" className="hover:underline">Hakkımızda</Link></li>
-              <li><Link href="/privacy" className="hover:underline">Gizlilik Sözleşmesi</Link></li>
               <li><Link href="/contact" className="hover:underline">İletişim</Link></li>
+              <li><Link href="/privacy" className="hover:underline">Gizlilik Sözleşmesi</Link></li>
             </ul>
           </div>
 
@@ -100,9 +100,9 @@ export default function Footer() {
           <div>
             <h3 className="font-bold text-base md:text-lg mb-3 md:mb-4">Yardım</h3>
             <ul className="space-y-2 text-sm md:text-base">
-              <li><Link href="/sales-agreement" className="hover:underline">Mesafeli Satış Sözleşmesi</Link></li>
+              <li><Link href="/mesafeli-satis-sozlesmesi" className="hover:underline">Mesafeli Satış Sözleşmesi</Link></li>
+              <li><Link href="/iptal-iade-sartlari" className="hover:underline">İptal ve İade Şartları</Link></li>
               <li><Link href="/faq" className="hover:underline">Sıkça Sorulan Sorular</Link></li>
-              <li><Link href="/terms" className="hover:underline">İptal ve İade Şartları</Link></li>
             </ul>
             
             {/* Social Media */}
@@ -183,8 +183,8 @@ export default function Footer() {
                 <ul className="space-y-3 text-sm">
                   <li><Link href="/" className="block py-1 hover:text-gray-300">Anasayfa</Link></li>
                   <li><Link href="/about" className="block py-1 hover:text-gray-300">Hakkımızda</Link></li>
-                  <li><Link href="/privacy" className="block py-1 hover:text-gray-300">Gizlilik Sözleşmesi</Link></li>
                   <li><Link href="/contact" className="block py-1 hover:text-gray-300">İletişim</Link></li>
+                  <li><Link href="/privacy" className="block py-1 hover:text-gray-300">Gizlilik Sözleşmesi</Link></li>
                 </ul>
               </div>
             )}
@@ -231,9 +231,9 @@ export default function Footer() {
             {openSections.includes('yardim') && (
               <div className="pb-4">
                 <ul className="space-y-3 text-sm">
-                  <li><Link href="/sales-agreement" className="block py-1 hover:text-gray-300">Mesafeli Satış Sözleşmesi</Link></li>
+                  <li><Link href="/mesafeli-satis-sozlesmesi" className="block py-1 hover:text-gray-300">Mesafeli Satış Sözleşmesi</Link></li>
+                  <li><Link href="/iptal-iade-sartlari" className="block py-1 hover:text-gray-300">İptal ve İade Şartları</Link></li>
                   <li><Link href="/faq" className="block py-1 hover:text-gray-300">Sıkça Sorulan Sorular</Link></li>
-                  <li><Link href="/terms" className="block py-1 hover:text-gray-300">İptal ve İade Şartları</Link></li>
                 </ul>
               </div>
             )}

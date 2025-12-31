@@ -8,6 +8,17 @@ import Footer from '@/components/footer'
 import { supabase } from '@/lib/supabase'
 import { Package, Truck, CheckCircle, Clock, XCircle, ChevronDown } from 'lucide-react'
 
+// Helper function to get payment method display name
+const getPaymentMethodName = (method: string): string => {
+  const methodMap: Record<string, string> = {
+    'credit_card': 'Kredi Kartı',
+    'bank_transfer': 'Havale/EFT',
+    'cash_on_delivery': 'Kapıda Ödeme',
+    'iyzico': 'Kredi Kartı (İyzico)'
+  }
+  return methodMap[method] || method
+}
+
 interface Order {
   id: string
   order_number: string
@@ -17,6 +28,7 @@ interface Order {
   shipping_cost?: number
   created_at: string
   payment_status?: string
+  payment_method?: string
   tracking_number?: string
   order_items?: any[]
   order_items_count?: number
@@ -328,11 +340,16 @@ export default function OrdersPage() {
                           {/* Order Summary */}
                           <div className="mt-4 pt-4 border-t border-gray-200">
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-gray-600 space-y-1">
                                 {order.payment_status === 'paid' ? (
                                   <span className="text-green-600 font-medium">✓ Ödendi</span>
                                 ) : (
                                   <span className="text-orange-600 font-medium">⏳ Ödeme Bekliyor</span>
+                                )}
+                                {order.payment_method && (
+                                  <div className="text-xs text-gray-500">
+                                    {getPaymentMethodName(order.payment_method)}
+                                  </div>
                                 )}
                               </div>
                               

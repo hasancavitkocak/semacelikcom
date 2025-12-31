@@ -265,6 +265,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
                 
                 <Link 
+                  href="/admin/payment-methods" 
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                    isActive('/admin/payment-methods') 
+                      ? 'bg-white text-gray-900 shadow-lg' 
+                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  }`}
+                >
+                  <Ticket size={16} />
+                  <span>Ödeme Yöntemleri</span>
+                </Link>
+                
+                <Link 
                   href="/admin/settings" 
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                     isActive('/admin/settings') 
@@ -434,6 +446,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <Link href="/admin/coupons" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all duration-200">
                     <Ticket size={14} />
                     <span>Kuponlar</span>
+                  </Link>
+                  <Link href="/admin/payment-methods" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all duration-200">
+                    <Ticket size={14} />
+                    <span>Ödeme Yöntemleri</span>
                   </Link>
                   <Link href="/admin/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all duration-200">
                     <Settings size={14} />

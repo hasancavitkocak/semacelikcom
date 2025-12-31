@@ -57,6 +57,8 @@ export default function CheckoutPage() {
   const [shippingLoading, setShippingLoading] = useState(false)
   const [citiesLoading, setCitiesLoading] = useState(false)
   const [error, setError] = useState('')
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([])
+  const [processingPayment, setProcessingPayment] = useState(false)
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -65,7 +67,7 @@ export default function CheckoutPage() {
     city: '',
     district: '',
     zipCode: '',
-    paymentMethod: 'iyzico'
+    paymentMethod: 'credit_card'
   })
   const [billingData, setBillingData] = useState({
     fullName: '',
@@ -76,23 +78,30 @@ export default function CheckoutPage() {
     zipCode: ''
   })
 
-  // İlk yükleme - paralel olarak tüm verileri çek
+  // İlk yükleme kontrolü - sadece bir kez çalışır
+  const [initialLoad, setInitialLoad] = useState(true)
+  
   useEffect(() => {
-    if (cartItems.length === 0) {
+    if (initialLoad && cartItems.length === 0) {
       router.push('/cart')
       return
     }
     
-    // Paralel yükleme
-    const initializeData = async () => {
-      await Promise.all([
-        cities.length === 0 ? loadCities() : Promise.resolve(),
-        districts.length === 0 ? loadDistricts() : Promise.resolve()
-      ])
+    if (initialLoad) {
+      setInitialLoad(false)
+      
+      // Paralel yükleme
+      const initializeData = async () => {
+        await Promise.all([
+          cities.length === 0 ? loadCities() : Promise.resolve(),
+          districts.length === 0 ? loadDistricts() : Promise.resolve(),
+          loadPaymentMethods()
+        ])
+      }
+      
+      initializeData()
     }
-    
-    initializeData()
-  }, [cartItems.length])
+  }, [cartItems.length, initialLoad])
 
   useEffect(() => {
     // Şehir seçildiğinde ilçeleri filtrele
@@ -133,6 +142,26 @@ export default function CheckoutPage() {
       if (data) setDistricts(data)
     } catch (error) {
       console.error('Load districts error:', error)
+    }
+  }
+
+  const loadPaymentMethods = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at')
+      
+      if (data) {
+        setPaymentMethods(data)
+        // İlk aktif ödeme yöntemini seç
+        if (data.length > 0) {
+          setFormData(prev => ({...prev, paymentMethod: data[0].type}))
+        }
+      }
+    } catch (error) {
+      console.error('Load payment methods error:', error)
     }
   }
 
@@ -244,16 +273,21 @@ export default function CheckoutPage() {
   }
 
   const handlePayment = async () => {
+    if (processingPayment) return // Çift tıklamayı engelle
+    
     setError('')
+    setProcessingPayment(true)
     
     if (!termsAccepted) {
       setError('Lütfen sözleşmeleri okuyup kabul edin!')
       window.scrollTo({ top: 0, behavior: 'smooth' })
+      setProcessingPayment(false)
       return
     }
 
     if (!user) {
       setError('Lütfen giriş yapın')
+      setProcessingPayment(false)
       return
     }
 
@@ -262,12 +296,17 @@ export default function CheckoutPage() {
     try {
       // Sipariş oluştur
       const shippingCost = shippingCalculation ? shippingCalculation.shippingCost : 0
+      
+      // Ödeme yöntemine göre status belirle
+      const paymentStatus = formData.paymentMethod === 'bank_transfer' ? 'pending' : 'paid'
+      
       const orderData = {
         user_id: user.id,
         conversation_id: `ORD-${Date.now()}`,
         total_amount: shippingCalculation ? shippingCalculation.total : subtotal,
         shipping_cost: shippingCost,
-        status: 'paid', // Test için direkt paid yapıyoruz
+        payment_method: formData.paymentMethod, // Ödeme yöntemi eklendi
+        status: paymentStatus, // Havale/EFT ise pending, diğerleri paid
         shipping_address: selectedAddressId ? 
           savedAddresses.find(addr => addr.id === selectedAddressId) || formData :
           formData,
@@ -298,32 +337,35 @@ export default function CheckoutPage() {
         payment_details: {
           test: true,
           card_last_four: '1234',
-          payment_method: 'test_card'
+          payment_method: formData.paymentMethod
         }
       }
 
-      // Supabase'e sipariş kaydet
-      const { data, error } = await supabase
-        .from('orders')
-        .insert([orderData])
-        .select()
-        .single()
+      // API'ye POST isteği gönder
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData)
+      })
 
-      if (error) {
-        throw error
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.message || 'Sipariş oluşturulamadı')
       }
 
-      // Order confirmation sayfasına yönlendir (sepet arka planda temizlenecek)
-      router.push(`/order-confirmation/${data.id}`)
+      // Sipariş başarılı - sepeti temizle ve yönlendir
+      clearCart()
       
-      // Sepeti arka planda sessizce temizle
-      setTimeout(() => {
-        clearCart(true)
-      }, 1000)
+      // Order confirmation sayfasına yönlendir
+      router.push(`/order-confirmation/${result.data.id}`)
       
     } catch (error: any) {
       console.error('Payment error:', error)
       setError('Ödeme işlemi sırasında bir hata oluştu: ' + error.message)
+      setProcessingPayment(false)
     }
   }
 
@@ -774,24 +816,51 @@ export default function CheckoutPage() {
                     Ödeme Yöntemi
                   </h2>
                   <div className="space-y-4 md:space-y-6">
-                    <div className="border-2 border-gray-900 bg-gray-50 rounded-lg p-4 md:p-6 cursor-pointer hover:bg-gray-100 transition">
-                      <div className="flex items-center gap-3 md:gap-4">
-                        <input 
-                          type="radio" 
-                          name="payment" 
-                          checked={formData.paymentMethod === 'iyzico'}
-                          onChange={() => setFormData({...formData, paymentMethod: 'iyzico'})}
-                          className="w-4 h-4 md:w-5 md:h-5 accent-gray-900 flex-shrink-0"
-                        />
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-                          <CreditCard size={20} className="md:w-6 md:h-6 text-gray-900" />
+                    {paymentMethods.map((method) => (
+                      <div 
+                        key={method.id}
+                        className={`border-2 rounded-lg p-4 md:p-6 cursor-pointer transition ${
+                          formData.paymentMethod === method.type
+                            ? 'border-gray-900 bg-gray-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        onClick={() => setFormData({...formData, paymentMethod: method.type})}
+                      >
+                        <div className="flex items-center gap-3 md:gap-4">
+                          <input 
+                            type="radio" 
+                            name="payment" 
+                            checked={formData.paymentMethod === method.type}
+                            onChange={() => setFormData({...formData, paymentMethod: method.type})}
+                            className="w-4 h-4 md:w-5 md:h-5 accent-gray-900 flex-shrink-0"
+                          />
+                          <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+                            {method.type === 'credit_card' && <CreditCard size={20} className="md:w-6 md:h-6 text-gray-900" />}
+                            {method.type === 'bank_transfer' && <Truck size={20} className="md:w-6 md:h-6 text-gray-900" />}
+                            {method.type === 'cash_on_delivery' && <ShoppingBag size={20} className="md:w-6 md:h-6 text-gray-900" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 text-sm md:text-base">{method.name}</p>
+                            <p className="text-xs md:text-sm text-gray-600">{method.description}</p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 text-sm md:text-base">Kredi/Banka Kartı</p>
-                          <p className="text-xs md:text-sm text-gray-600">İyzico ile güvenli ödeme</p>
-                        </div>
+                        
+                        {/* Havale/EFT için IBAN bilgisi */}
+                        {method.type === 'bank_transfer' && formData.paymentMethod === method.type && method.iban && (
+                          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 className="font-semibold text-blue-900 mb-2">Banka Bilgileri</h4>
+                            <div className="space-y-1 text-sm">
+                              <p><span className="font-medium">Banka:</span> {method.bank_name}</p>
+                              <p><span className="font-medium">Hesap Sahibi:</span> {method.account_holder}</p>
+                              <p><span className="font-medium">IBAN:</span> <span className="font-mono">{method.iban}</span></p>
+                            </div>
+                            <p className="text-xs text-blue-700 mt-2">
+                              Açıklama kısmına sipariş numaranızı yazmayı unutmayın.
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    ))}
 
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 md:p-4">
                       <div className="flex gap-2 md:gap-3">
@@ -799,7 +868,7 @@ export default function CheckoutPage() {
                         <div>
                           <p className="font-medium text-gray-900 mb-1 text-sm md:text-base">Güvenli Ödeme</p>
                           <p className="text-xs md:text-sm text-gray-600">
-                            Ödemeniz İyzico güvencesi altında işlenir. Kart bilgileriniz saklanmaz ve 256-bit SSL ile şifrelenir.
+                            Tüm ödemeleriniz güvenli şekilde işlenir. Kişisel bilgileriniz korunur.
                           </p>
                         </div>
                       </div>

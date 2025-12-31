@@ -16,9 +16,23 @@ interface OrderDetail {
   shipping_cost?: number
   created_at: string
   payment_status?: string
+  payment_method?: string
   shipping_address?: any
   billing_address?: any
   order_items?: any[]
+}
+
+// Helper function to get payment method display name
+const getPaymentMethodName = (method?: string): string => {
+  if (!method) return 'Bilinmiyor'
+  
+  const methodMap: Record<string, string> = {
+    'credit_card': 'Kredi Kartı',
+    'bank_transfer': 'Havale/EFT',
+    'cash_on_delivery': 'Kapıda Ödeme',
+    'iyzico': 'Kredi Kartı (İyzico)'
+  }
+  return methodMap[method] || method
 }
 
 export default function OrderConfirmationPage() {
@@ -26,6 +40,7 @@ export default function OrderConfirmationPage() {
   const params = useParams()
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [paymentMethodInfo, setPaymentMethodInfo] = useState<any>(null)
 
   useEffect(() => {
     loadOrderDetail()
@@ -41,11 +56,32 @@ export default function OrderConfirmationPage() {
       }
 
       setOrder(result.data)
+      
+      // Eğer havale/EFT ise ödeme yöntemi bilgilerini çek
+      if (result.data.payment_method === 'bank_transfer') {
+        await loadPaymentMethodInfo()
+      }
     } catch (error) {
       console.error('Load order detail error:', error)
       router.push('/')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadPaymentMethodInfo = async () => {
+    try {
+      const response = await fetch('/api/payment-methods')
+      const result = await response.json()
+      
+      if (result.success) {
+        const bankTransferMethod = result.data.find((method: any) => 
+          method.type === 'bank_transfer' && method.is_active
+        )
+        setPaymentMethodInfo(bankTransferMethod)
+      }
+    } catch (error) {
+      console.error('Load payment method info error:', error)
     }
   }
 
@@ -134,10 +170,46 @@ export default function OrderConfirmationPage() {
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2">Ödeme Bilgileri</h3>
                   <div className="space-y-2 text-sm text-gray-600">
-                    <p>Ödeme Durumu: <span className="text-green-600 font-semibold">✓ Ödendi</span></p>
+                    <p>Ödeme Durumu: {
+                      order.payment_status === 'paid' ? (
+                        <span className="text-green-600 font-semibold">✓ Ödendi</span>
+                      ) : (
+                        <span className="text-orange-600 font-semibold">⏳ Ödeme Bekliyor</span>
+                      )
+                    }</p>
+                    <p>Ödeme Yöntemi: <strong>{getPaymentMethodName(order.payment_method)}</strong></p>
+                    
+                    {/* Havale/EFT için özel mesaj */}
+                    {order.payment_method === 'bank_transfer' && order.payment_status !== 'paid' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-3">
+                        <p className="text-blue-800 text-sm font-medium mb-3">
+                          💳 Havale/EFT Bilgilendirmesi
+                        </p>
+                        
+                        {paymentMethodInfo && (
+                          <div className="space-y-2 text-sm mb-3">
+                            {paymentMethodInfo.bank_name && (
+                              <p><span className="font-medium">Banka:</span> {paymentMethodInfo.bank_name}</p>
+                            )}
+                            {paymentMethodInfo.account_holder && (
+                              <p><span className="font-medium">Hesap Sahibi:</span> {paymentMethodInfo.account_holder}</p>
+                            )}
+                            {paymentMethodInfo.iban && (
+                              <p><span className="font-medium">IBAN:</span> <span className="font-mono text-blue-900">{paymentMethodInfo.iban}</span></p>
+                            )}
+                          </div>
+                        )}
+                        
+                        <p className="text-blue-700 text-xs">
+                          Ödemenizi yaptıktan sonra dekont fotoğrafını WhatsApp'dan gönderin. 
+                          Açıklama kısmına sipariş numaranızı ({order.order_number}) yazmayı unutmayın.
+                        </p>
+                      </div>
+                    )}
+                    
                     <div className="bg-gray-100 p-3 rounded-lg">
                       <p className="text-center">
-                        <span className="text-gray-700 text-sm">Toplam Ödenen Tutar</span><br/>
+                        <span className="text-gray-700 text-sm">Toplam Tutar</span><br/>
                         <strong className="text-2xl text-gray-900">{order.total?.toFixed(2)} TL</strong>
                       </p>
                     </div>

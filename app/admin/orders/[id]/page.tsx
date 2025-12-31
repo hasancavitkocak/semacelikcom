@@ -58,6 +58,17 @@ const getAddressField = (address: any, fieldNames: string[]): string => {
   return 'Bilinmiyor'
 }
 
+// Helper function to get payment method display name
+const getPaymentMethodName = (method: string): string => {
+  const methodMap: Record<string, string> = {
+    'credit_card': 'Kredi Kartı',
+    'bank_transfer': 'Havale/EFT',
+    'cash_on_delivery': 'Kapıda Ödeme',
+    'iyzico': 'Kredi Kartı (İyzico)'
+  }
+  return methodMap[method] || method
+}
+
 export default function AdminOrderDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -371,7 +382,7 @@ export default function AdminOrderDetailPage() {
               <div className="pt-3 border-t border-gray-200">
                 <div className="flex items-center gap-2 text-sm">
                   <CreditCard size={16} className="text-gray-400" />
-                  <span className="text-gray-600">Ödeme: {order.payment_method}</span>
+                  <span className="text-gray-600">Ödeme: {getPaymentMethodName(order.payment_method)}</span>
                 </div>
               </div>
             </div>

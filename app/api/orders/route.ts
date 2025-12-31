@@ -101,7 +101,7 @@ export async function GET(request: Request) {
       user_email: userProfiles[order.user_id]?.email || order.shipping_address?.email || 'Bilinmiyor',
       user_name: userProfiles[order.user_id]?.full_name || order.shipping_address?.fullName || 'Bilinmiyor',
       payment_status: order.status, // Use actual status for payment
-      payment_method: order.payment_details?.payment_method || 'Bilinmiyor',
+      payment_method: order.payment_method || order.payment_details?.payment_method || 'Bilinmiyor',
       tracking_number: order.tracking_number,
       shipping_address: order.shipping_address,
       billing_address: order.billing_address,
@@ -127,6 +127,49 @@ export async function GET(request: Request) {
     })
   } catch (error: any) {
     console.error('Orders API Error:', error)
+    return NextResponse.json({ 
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message 
+    }, { status: 500 })
+  }
+}
+
+// POST - Yeni sipariş oluştur
+export async function POST(request: Request) {
+  // Rate limiting
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  if (!checkRateLimit(ip, 10, 60000)) { // 10 requests per minute
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
+  try {
+    const orderData = await request.json()
+
+    // Gerekli alanları kontrol et
+    if (!orderData.user_id || !orderData.items || !orderData.total_amount) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'Missing required fields' 
+      }, { status: 400 })
+    }
+
+    // Sipariş oluştur
+    const { data, error } = await supabase
+      .from('orders')
+      .insert([orderData])
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return NextResponse.json({
+      success: true,
+      data: data,
+      message: 'Sipariş başarıyla oluşturuldu'
+    })
+  } catch (error: any) {
+    console.error('Create order error:', error)
     return NextResponse.json({ 
       success: false,
       error: 'Internal Server Error',

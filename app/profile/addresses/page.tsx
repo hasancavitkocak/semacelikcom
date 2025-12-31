@@ -102,12 +102,16 @@ export default function AddressesPage() {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) return
 
+      console.log('Current user ID:', authUser.id)
+
       const { data, error } = await supabase
         .from('addresses')
         .select('*')
         .eq('user_id', authUser.id)
         .order('created_at', { ascending: false })
 
+      console.log('Addresses query result:', { data, error })
+      
       if (error) throw error
       setAddresses(data || [])
     } catch (error) {

@@ -111,7 +111,7 @@ export async function GET(
       user_name: userProfile?.full_name || data.shipping_address?.fullName || 'Bilinmiyor',
       user_phone: userProfile?.phone || data.shipping_address?.phone || '',
       payment_status: data.status,
-      payment_method: data.payment_details?.payment_method || 'Bilinmiyor',
+      payment_method: data.payment_method || data.payment_details?.payment_method || 'Bilinmiyor',
       tracking_number: data.tracking_number,
       shipping_address: data.shipping_address,
       billing_address: data.billing_address,

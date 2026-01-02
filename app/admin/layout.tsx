@@ -11,10 +11,99 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   const [expandedSections, setExpandedSections] = useState<string[]>([])
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    
+    // Login sayfası değilse auth kontrolü yap
+    if (pathname !== '/admin/login') {
+      checkAuth()
+    }
+  }, [pathname])
+
+  useEffect(() => {
+    // Auth state değişikliklerini dinle
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email)
+      
+      if (event === 'SIGNED_OUT' || !session) {
+        setIsAuthenticated(false)
+        setIsAdmin(false)
+        if (pathname !== '/admin/login') {
+          router.replace('/admin/login')
+        }
+      } else if (event === 'SIGNED_IN' && session) {
+        setIsAuthenticated(true)
+        
+        // Admin kontrolü yap
+        try {
+          const { data: user, error } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single()
+
+          if (error || !user || user.role !== 'admin') {
+            console.log('Admin kontrolü başarısız:', error, user)
+            alert('Bu hesap admin paneline erişim yetkisine sahip değil!')
+            await supabase.auth.signOut()
+            return
+          }
+
+          setIsAdmin(true)
+          console.log('Admin girişi başarılı')
+        } catch (error) {
+          console.error('Admin kontrolü hatası:', error)
+          await supabase.auth.signOut()
+        }
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [pathname, router])
+
+  const checkAuth = async () => {
+    try {
+      // Session kontrolü
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        setLoading(false)
+        if (pathname !== '/admin/login') {
+          router.replace('/admin/login')
+        }
+        return
+      }
+
+      setIsAuthenticated(true)
+
+      // Admin kontrolü
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (error || !user || user.role !== 'admin') {
+        setLoading(false)
+        // Admin değilse ana sayfaya yönlendir
+        alert('Bu hesap admin paneline erişim yetkisine sahip değil!')
+        await supabase.auth.signOut()
+        router.replace('/')
+        return
+      }
+
+      setIsAdmin(true)
+      setLoading(false)
+    } catch (error) {
+      console.error('Auth check error:', error)
+      setLoading(false)
+      router.replace('/admin/login')
+    }
+  }
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => 
@@ -29,11 +118,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>
   }
 
-  // Client-side render bekle
-  if (!mounted) {
+  // Loading durumu
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-gray-900"></div>
+      </div>
+    )
+  }
+
+  // Auth kontrolü
+  if (!isAuthenticated || !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Yetkisiz Erişim</h1>
+          <p className="text-gray-600 mb-4">Bu sayfaya erişim yetkiniz bulunmamaktadır.</p>
+          <Link 
+            href="/" 
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Ana Sayfaya Dön
+          </Link>
+        </div>
       </div>
     )
   }

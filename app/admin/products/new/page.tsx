@@ -162,7 +162,10 @@ export default function NewProductPage() {
           .from('product_categories')
           .insert(categoryInserts)
         
-        if (categoryError) throw categoryError
+        if (categoryError) {
+          console.warn('Kategori ekleme hatası (devam ediliyor):', categoryError)
+          // Hata olsa bile devam et, çünkü ürün zaten oluşturuldu
+        }
       }
 
       // Görselleri yükle ve ekle
@@ -213,6 +216,14 @@ export default function NewProductPage() {
       router.push('/admin/products')
     } catch (error: any) {
       console.error('Ürün ekleme hatası:', error)
+      
+      // Eğer sadece kategori hatası ise ve ürün oluşturulduysa, uyarı ver ama başarılı say
+      if (error.message && error.message.includes('product_categories')) {
+        alert('Ürün eklendi ancak kategori ilişkilendirmesinde sorun oluştu. Ürünü düzenleyerek kategorileri tekrar atayabilirsiniz.')
+        router.push('/admin/products')
+        return
+      }
+      
       alert('Hata: ' + error.message)
     } finally {
       setLoading(false)

@@ -21,7 +21,7 @@ export default function AdminCategoriesPage() {
     description: '', 
     image_url: '',
     show_on_homepage: false,
-    parent_menu_id: ''
+    parent_menu_id: null // String yerine null
   })
   const [uploadedImage, setUploadedImage] = useState<{ file: File; url: string } | null>(null)
 
@@ -74,9 +74,18 @@ export default function AdminCategoriesPage() {
         finalImageUrl = publicUrl
       }
 
+      // Güvenli kategori verisi oluştur - sadece gerekli alanları gönder
       const categoryData = {
-        ...formData,
-        image_url: finalImageUrl
+        name: formData.name,
+        slug: formData.slug,
+        description: formData.description || null,
+        image_url: finalImageUrl || null,
+        show_on_homepage: formData.show_on_homepage || false
+      }
+
+      // Parent_menu_id alanını sadece varsa ve geçerliyse ekle
+      if (formData.parent_menu_id && formData.parent_menu_id.trim() !== '') {
+        categoryData.parent_menu_id = formData.parent_menu_id
       }
 
       if (editingId) {
@@ -96,7 +105,7 @@ export default function AdminCategoriesPage() {
         alert('✅ Kategori başarıyla eklendi!')
       }
 
-      setFormData({ name: '', slug: '', description: '', image_url: '', show_on_homepage: false, parent_menu_id: '' })
+      setFormData({ name: '', slug: '', description: '', image_url: '', show_on_homepage: false, parent_menu_id: null })
       setUploadedImage(null)
       setEditingId(null)
       setShowForm(false)
@@ -114,14 +123,14 @@ export default function AdminCategoriesPage() {
       description: category.description || '',
       image_url: category.image_url || '',
       show_on_homepage: category.show_on_homepage || false,
-      parent_menu_id: category.parent_menu_id || ''
+      parent_menu_id: category.parent_menu_id || null
     })
     setEditingId(category.id)
     setShowForm(true)
   }
 
   const handleCancel = () => {
-    setFormData({ name: '', slug: '', description: '', image_url: '', show_on_homepage: false, parent_menu_id: '' })
+    setFormData({ name: '', slug: '', description: '', image_url: '', show_on_homepage: false, parent_menu_id: null })
     setUploadedImage(null)
     setEditingId(null)
     setShowForm(false)

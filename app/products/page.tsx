@@ -72,21 +72,19 @@ function ProductsContent() {
     if (activeCategory) {
       filtered = filtered.filter(p => {
         // Ana kategori kontrolü (geriye uyumluluk için)
-        if (p.category?.name?.toLowerCase() === activeCategory.toLowerCase() ||
-            p.category?.slug?.toLowerCase() === activeCategory.toLowerCase()) {
-          return true
-        }
-        
+        const hasOldCategory = p.category?.name?.toLowerCase() === activeCategory.toLowerCase() ||
+            p.category?.slug?.toLowerCase() === activeCategory.toLowerCase() ||
+            p.category?.id === activeCategory
+            
         // Çoklu kategori kontrolü
-        if (p.product_categories && p.product_categories.length > 0) {
-          return p.product_categories.some((pc: any) => 
+        const hasNewCategory = p.product_categories && p.product_categories.length > 0 &&
+          p.product_categories.some((pc: any) => 
             pc.category?.name?.toLowerCase() === activeCategory.toLowerCase() ||
             pc.category?.slug?.toLowerCase() === activeCategory.toLowerCase() ||
             pc.category?.id === activeCategory
           )
-        }
         
-        return false
+        return hasOldCategory || hasNewCategory
       })
     }
 
